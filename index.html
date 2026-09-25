@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c1d25">
+<title>The Cartographer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--surface-0:#f5f4ef;--surface-1:#f0efea;--surface-2:#ffffff;--surface-3:#ffffff;--text-primary:#1f1e1d;--text-secondary:#5f5e5a;--text-muted:#888780;--text-danger:#a32d2d;--text-accent:#185fa5;--bg-accent:#e6f1fb;--border:rgba(31,30,29,0.15);--border-strong:rgba(31,30,29,0.28);--fill-ghost-hover:rgba(31,30,29,0.06);--radius:8px;--font-mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--surface-0:#1a1a19;--surface-1:#232322;--surface-2:#2a2a28;--surface-3:#31312f;--text-primary:#f1efe8;--text-secondary:#b4b2a9;--text-muted:#888780;--text-danger:#f09595;--text-accent:#85b7eb;--bg-accent:#0c447c;--border:rgba(241,239,232,0.14);--border-strong:rgba(241,239,232,0.28);--fill-ghost-hover:rgba(241,239,232,0.08)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5}
+main{max-width:1200px;margin:0 auto;padding:16px}
+button{font:inherit;font-size:14px;color:var(--text-primary);background:transparent;border:0.5px solid var(--border-strong);border-radius:var(--radius);height:36px;padding:0 12px;cursor:pointer}
+button:hover{background:var(--surface-1)}
+input,select,textarea{font:inherit;font-size:14px;color:var(--text-primary);background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:var(--radius);height:34px;padding:0 8px}
+textarea{height:auto;padding:8px}
+.cg-btn{font-size:13px;height:32px;padding:0 10px;display:inline-flex;align-items:center;gap:6px}
+.cg-menu{position:absolute;z-index:5;background:var(--surface-3);border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:4px;min-width:200px;max-width:calc(100% - 16px);font-size:13px}
+.cg-menu .h{padding:6px 10px 4px;color:var(--text-secondary);font-size:12px}
+.cg-menu button{display:flex;width:100%;border:none;background:transparent;justify-content:flex-start;text-align:left;height:30px;padding:0 10px;font-size:13px;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cg-menu button:hover{background:var(--fill-ghost-hover)}
+.cg-menu hr{border:none;border-top:0.5px solid var(--border);margin:4px 0}
+.cg-dlg{position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:6}
+.cg-card{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;width:min(380px,92%);font-size:14px}
+.cg-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.cg-row label{font-size:13px;color:var(--text-secondary);min-width:84px}
+.cg-err{font-size:13px;color:var(--text-danger);min-height:18px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<main>
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 12px">
+<h1 style="font-size:20px;font-weight:500;margin:0">The Cartographer</h1>
+<span style="font-size:13px;color:var(--text-secondary)">Space and navigation</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px">
+<span id="modeTag" style="font-size:12px;padding:4px 10px;border-radius:var(--radius);background:var(--bg-accent);color:var(--text-accent)">New map</span>
+<button class="cg-btn" id="bUndo"><i class="ti ti-arrow-back-up" aria-hidden="true"></i>Undo</button>
+<button class="cg-btn" id="bRoute"><i class="ti ti-route" aria-hidden="true"></i>Route to safety</button>
+<span style="flex:1"></span>
+<button class="cg-btn" id="bOut" aria-label="Zoom out"><i class="ti ti-minus" aria-hidden="true"></i></button>
+<button class="cg-btn" id="bFit">Fit</button>
+<button class="cg-btn" id="bIn" aria-label="Zoom in"><i class="ti ti-plus" aria-hidden="true"></i></button>
+</div>
+<div id="wrap" style="position:relative;height:calc(100vh - 250px);min-height:380px;border:0.5px solid var(--border);border-radius:12px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;background:var(--surface-2)">
+<svg id="map" width="100%" height="100%" style="display:block;cursor:crosshair"></svg>
+<div id="menu" class="cg-menu" hidden></div>
+<div id="dlg"></div>
+</div>
+<div id="status" style="font-size:13px;color:var(--text-secondary);margin:8px 0 6px;min-height:20px"></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-secondary);margin:0 0 10px;align-items:center">
+<span><span style="display:inline-block;width:14px;height:4px;background:#BA7517;vertical-align:middle;margin-right:5px"></span>Unopened</span>
+<span><span style="display:inline-block;width:14px;height:4px;background:#1D9E75;vertical-align:middle;margin-right:5px"></span>Open</span>
+<span><span style="display:inline-block;width:14px;height:4px;background:#E24B4A;vertical-align:middle;margin-right:5px"></span>Locked</span>
+<span><span style="display:inline-block;width:14px;height:4px;background:#7F77DD;vertical-align:middle;margin-right:5px"></span>Sealed</span>
+<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #BA7517;background:rgba(239,159,39,0.28);vertical-align:middle;margin-right:5px"></span>Unsearched</span>
+<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #888780;vertical-align:middle;margin-right:5px"></span>Searched</span>
+<span>Airlock double line, blast door thick, hatch dot, vent dashed, viewport thin gray</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<button class="cg-btn" id="bBackup"><i class="ti ti-device-floppy" aria-hidden="true"></i>Backup</button>
+<button class="cg-btn" id="bImport"><i class="ti ti-upload" aria-hidden="true"></i>Import</button>
+<button class="cg-btn" id="bExport"><i class="ti ti-photo" aria-hidden="true"></i>Export image</button>
+<button class="cg-btn" id="bNew"><i class="ti ti-file-plus" aria-hidden="true"></i>New map</button>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const svg=$('map'),wrap=$('wrap'),menu=$('menu'),dlg=$('dlg'),statusEl=$('status');
+const KEY='cartographer-map-v1';
+const DOOR_C={unopened:'#BA7517',open:'#1D9E75',locked:'#E24B4A',sealed:'#7F77DD'};
+const DOOR_T={door:'Door',airlock:'Airlock',hatch:'Hatch',blast:'Blast door',vent:'Vent',port:'Viewport'};
+const DOOR_I={door:'door',airlock:'air-conditioning',hatch:'circle-dot',blast:'shield',vent:'wind',port:'window'};
+const OBJ={unknown:['?','Unsearched object'],table:['T','Table'],terminal:['C','Computer terminal'],locker:['L','Locker'],crate:['X','Crate'],cryo:['P','Cryopod'],reader:['K','Keycard reader'],body:['B','Body'],hazard:['!','Hazard'],note:['N','Note'],wreck:['W','Wreckage'],debris:['D','Debris'],beacon:['S','Beacon'],vehicle:['V','Vehicle']};
+const IN_OBJ=['unknown','table','terminal','locker','crate','cryo','reader','body','hazard','note'];
+const OUT_OBJ=['unknown','crate','wreck','debris','hazard','beacon','vehicle','body','note'];
+let S=null,undo=[],view={x:0,y:0,s:24},route=null,hov=null,hovKey='';
+const probe=document.createElement('div');probe.style.display='none';wrap.appendChild(probe);
+function cv(v,p){probe.style[p]='';probe.style[p]=v;return getComputedStyle(probe)[p];}
+function pal(){let bg=cv('var(--surface-2)','backgroundColor');if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent')bg='#ffffff';return{text:cv('var(--text-primary)','color'),muted:cv('var(--text-secondary)','color'),bg,grid:'rgba(136,135,128,0.35)'};}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function roomAt(x,y){return S.rooms.find(r=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h);}
+function doorAt(e){return S.doors.find(d=>d.x===e.x&&d.y===e.y&&d.o===e.o);}
+function objAt(x,y){return S.objs.find(o=>o.x===x&&o.y===y);}
+function edgeCells(d){return d.o==='h'?[[d.x,d.y-1],[d.x,d.y]]:[[d.x-1,d.y],[d.x,d.y]];}
+function beyondEmpty(d){const[a,b]=edgeCells(d);return !roomAt(a[0],a[1])||!roomAt(b[0],b[1]);}
+function tip(d){return (d.label?d.label+' · ':'')+DOOR_T[d.t]+(d.t==='port'?'':' · '+d.st);}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function pushUndo(){undo.push(JSON.stringify(S));if(undo.length>60)undo.shift();}
+function hint(){if(!S)return 'Choose a starting point.';return S.mode==='ship'?'Right-click (or long-press) a wall or a cell inside explored space. Drag to pan; ctrl+scroll or pinch to zoom.':'Right-click (or long-press) anywhere to add objects or entrances. Drag to pan; ctrl+scroll or pinch to zoom.';}
+function setStatus(m){statusEl.textContent=m||hint();}
+function newMap(mode){
+S={mode,rooms:[{id:1,x:0,y:0,w:10,h:5,name:mode==='ship'?'Dropship Airlock':'Drop Zone',kind:mode==='ship'?'room':'zone'}],doors:[],objs:[],nid:2,start:1,current:1};
+if(mode==='drop'){
+[['North',4,0,'h'],['South',4,5,'h'],['West',0,2,'v'],['East',10,2,'v']].forEach(([dir,x,y,o])=>S.doors.push({id:S.nid++,x,y,o,t:'door',st:'open',label:'Egress '+dir}));
+}
+undo=[];route=null;save();closeDlg();fit();render();setStatus();
+}
+function hit(wx,wy){
+const cx=Math.floor(wx),cy=Math.floor(wy),fx=wx-cx,fy=wy-cy,m=Math.min(fx,1-fx,fy,1-fy);
+let e=null;
+if(m<0.22){if(m===fy)e={x:cx,y:cy,o:'h'};else if(m===1-fy)e={x:cx,y:cy+1,o:'h'};else if(m===fx)e={x:cx,y:cy,o:'v'};else e={x:cx+1,y:cy,o:'v'};}
+if(e){const[a,b]=edgeCells(e),ra=roomAt(a[0],a[1]),rb=roomAt(b[0],b[1]),cell={x:cx,y:cy};
+if(doorAt(e))return{k:'edge',e,cell};
+if(ra!==rb)return{k:'edge',e,cell};
+if(!ra&&S.mode==='drop'&&m<0.14)return{k:'edge',e,cell};}
+const r=roomAt(cx,cy);
+if(!r&&S.mode==='ship')return null;
+return{k:'cell',x:cx,y:cy,r};
+}
+function toWorld(cx,cy){const b=svg.getBoundingClientRect();return[view.x+(cx-b.left)/view.s,view.y+(cy-b.top)/view.s];}
+function hitAt(cx,cy){const[w,h]=toWorld(cx,cy);return hit(w,h);}
+function hkey(h){return h?(h.k==='edge'?'e'+h.e.x+','+h.e.y+h.e.o:'c'+h.x+','+h.y):'';}
+function draw(x0,y0,w,h,px,P,bg,hv){
+let o='<g font-family="system-ui, -apple-system, Segoe UI, sans-serif">';
+if(bg)o+=`<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="${P.bg}"/>`;
+for(let g=Math.floor(x0);g<=x0+w;g++)o+=`<line x1="${g}" y1="${y0}" x2="${g}" y2="${y0+h}" stroke="${P.grid}" stroke-width="${px*(g%5?0.6:1.4)}"/>`;
+for(let g=Math.floor(y0);g<=y0+h;g++)o+=`<line x1="${x0}" y1="${g}" x2="${x0+w}" y2="${g}" stroke="${P.grid}" stroke-width="${px*(g%5?0.6:1.4)}"/>`;
+if(!S)return o+'</g>';
+for(const r of S.rooms)o+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${r.kind==='corridor'?'rgba(136,135,128,0.18)':r.kind==='zone'?'rgba(99,153,34,0.12)':'rgba(55,138,221,0.10)'}" stroke="${P.text}" stroke-width="${2*px}"${r.kind==='zone'?` stroke-dasharray="${6*px} ${4*px}"`:''}/>`;
+if(hv&&hv.k==='cell')o+=`<rect x="${hv.x}" y="${hv.y}" width="1" height="1" fill="rgba(55,138,221,0.22)"/>`;
+const fs=12*px;
+for(const r of S.rooms){const here=S.current===r.id;o+=`<text x="${r.x+0.15}" y="${r.y+0.1+fs}" font-size="${fs}" fill="${here?'#1D9E75':P.muted}">${esc(r.name)}${here?' · you are here':''}</text>`;}
+for(const d of S.doors){
+const H=d.o==='h',mx=H?d.x+0.5:d.x,my=H?d.y:d.y+0.5;
+const seg=(off,c,wd,ex='')=>H?`<line x1="${d.x+0.1}" y1="${d.y+off}" x2="${d.x+0.9}" y2="${d.y+off}" stroke="${c}" stroke-width="${wd}" ${ex}/>`:`<line x1="${d.x+off}" y1="${d.y+0.1}" x2="${d.x+off}" y2="${d.y+0.9}" stroke="${c}" stroke-width="${wd}" ${ex}/>`;
+const c=d.t==='port'?P.muted:(DOOR_C[d.st]||DOOR_C.unopened);
+o+=`<g><title>${esc(tip(d))}</title>`+seg(0,P.bg,Math.max(0.14,5*px));
+if(d.t==='port')o+=seg(-0.06,c,Math.max(0.04,1.5*px))+seg(0.06,c,Math.max(0.04,1.5*px));
+else if(d.t==='airlock')o+=seg(-0.08,c,0.1)+seg(0.08,c,0.1);
+else if(d.t==='blast')o+=seg(0,c,0.34);
+else if(d.t==='vent')o+=seg(0,c,0.18,'stroke-dasharray="0.12 0.08"');
+else o+=seg(0,c,0.2);
+if(d.t==='hatch')o+=`<circle cx="${mx}" cy="${my}" r="0.17" fill="${c}"/>`;
+if(d.label)o+=`<text x="${mx+(H?0:0.25)}" y="${my+(H?-0.25:0.1)}" font-size="${11*px}" fill="${P.muted}" text-anchor="${H?'middle':'start'}">${esc(d.label)}</text>`;
+o+='</g>';}
+for(const b of S.objs){const cx=b.x+0.5,cy=b.y+0.5,r=Math.max(0.36,9*px),f=Math.max(0.44,11*px),[ch,nm]=OBJ[b.t]||OBJ.unknown;
+o+=`<g><title>${esc((b.label||nm)+(b.searched?' · searched':' · unsearched'))}</title><circle cx="${cx}" cy="${cy}" r="${r}" fill="${b.searched?P.bg:'rgba(239,159,39,0.28)'}" stroke="${b.searched?P.muted:'#BA7517'}" stroke-width="${1.5*px}"/><text x="${cx}" y="${cy}" dy="0.35em" text-anchor="middle" font-size="${f}" font-weight="500" fill="${b.searched?P.muted:P.text}">${ch}</text>`;
+if(b.label)o+=`<text x="${cx+r+0.08}" y="${cy}" dy="0.35em" font-size="${11*px}" fill="${P.muted}">${esc(b.label)}</text>`;
+o+='</g>';}
+if(route&&route.pts.length>1)o+=`<polyline points="${route.pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#1D9E75" stroke-width="${3*px}" stroke-dasharray="${8*px} ${5*px}" stroke-linecap="round" stroke-linejoin="round"/>`;
+if(hv&&hv.k==='edge'){const e=hv.e;o+=e.o==='h'?`<line x1="${e.x}" y1="${e.y}" x2="${e.x+1}" y2="${e.y}" stroke="#378ADD" stroke-width="${4*px}" stroke-linecap="round"/>`:`<line x1="${e.x}" y1="${e.y}" x2="${e.x}" y2="${e.y+1}" stroke="#378ADD" stroke-width="${4*px}" stroke-linecap="round"/>`;}
+return o+'</g>';
+}
+function render(){
+const W=wrap.clientWidth||680,H=wrap.clientHeight||460,vw=W/view.s,vh=H/view.s;
+svg.setAttribute('viewBox',`${view.x} ${view.y} ${vw} ${vh}`);
+svg.innerHTML=draw(view.x,view.y,vw,vh,1/view.s,pal(),false,hov);
+$('modeTag').textContent=S?(S.mode==='ship'?'Ship · inside':'Drop zone · outside'):'New map';
+$('bRoute').innerHTML=route?'<i class="ti ti-route-off" aria-hidden="true"></i>Hide route':'<i class="ti ti-route" aria-hidden="true"></i>Route to safety';
+}
+function bounds(){let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;const inc=(a,b,c,d)=>{x1=Math.min(x1,a);y1=Math.min(y1,b);x2=Math.max(x2,c);y2=Math.max(y2,d);};S.rooms.forEach(r=>inc(r.x,r.y,r.x+r.w,r.y+r.h));S.objs.forEach(o=>inc(o.x,o.y,o.x+1,o.y+1));S.doors.forEach(d=>inc(d.x-1,d.y-1,d.x+1,d.y+1));const p=3;return{x:x1-p,y:y1-p,w:x2-x1+2*p,h:y2-y1+2*p};}
+function fit(){const W=wrap.clientWidth||680,H=wrap.clientHeight||460;if(!S){view={s:24,x:-(W/24-10)/2,y:-(H/24-5)/2};return;}const b=bounds(),s=Math.max(6,Math.min(48,W/b.w,H/b.h));view={s,x:b.x+b.w/2-W/s/2,y:b.y+b.h/2-H/s/2};}
+function ensureVisible(r){const W=wrap.clientWidth/view.s,H=wrap.clientHeight/view.s;if(r.x<view.x||r.y<view.y||r.x+r.w>view.x+W||r.y+r.h>view.y+H)fit();}
+function zoomAt(cx,cy,f){const b=svg.getBoundingClientRect(),ox=cx-b.left,oy=cy-b.top,wx=view.x+ox/view.s,wy=view.y+oy/view.s,s2=Math.max(6,Math.min(80,view.s*f));view.x=wx-ox/s2;view.y=wy-oy/s2;view.s=s2;render();}
+function closeMenu(){menu.hidden=true;menu.innerHTML='';}
+function closeDlg(){dlg.innerHTML='';}
+function showDlg(html){closeMenu();dlg.innerHTML=`<div class="cg-dlg"><div class="cg-card">${html}</div></div>`;}
+function mkBtn(x){const b=document.createElement('button');b.title=x.l;b.innerHTML=(x.badge?`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;border-radius:50%;border:1px solid #BA7517;font-size:11px;font-weight:500">${esc(x.badge)}</span>`:`<i class="ti ti-${x.i}" aria-hidden="true" style="font-size:16px;flex:none"></i>`)+`<span style="overflow:hidden;text-overflow:ellipsis">${esc(x.l)}</span>`;
+b.onclick=()=>{closeMenu();if(x.mut)pushUndo();x.f();if(x.mut){route=null;save();render();setStatus();}};return b;}
+function items(h,px,py){
+const it=[];
+if(h.k==='edge'){
+const d=doorAt(h.e);
+if(d){it.push({h:tip(d)});
+if(d.t!=='port'){
+if(d.st!=='open')it.push({i:'door-enter',l:'Open',mut:1,f:()=>{d.st='open';if(beyondEmpty(d))mapDialog(d);}});
+else if(beyondEmpty(d))it.push({i:'map-2',l:"Map what's beyond",f:()=>mapDialog(d)});
+['unopened','locked','sealed'].filter(s=>s!==d.st).forEach(s=>it.push({i:{unopened:'door',locked:'lock',sealed:'barrier-block'}[s],l:'Mark '+s,mut:1,f:()=>{d.st=s;}}));}
+it.push({i:'tag',l:d.label?'Edit label':'Add label',f:()=>textDialog('Label this '+DOOR_T[d.t].toLowerCase(),d.label||'',v=>{d.label=v;})});
+it.push('hr',{i:'trash',l:'Remove',mut:1,f:()=>{S.doors=S.doors.filter(x=>x!==d);}});
+}else{
+it.push({h:'Wall edge'});
+it.push({grid:['door','airlock','hatch','blast','vent','port'].map(t=>({i:DOOR_I[t],l:DOOR_T[t],mut:1,f:()=>{S.doors.push({id:S.nid++,x:h.e.x,y:h.e.y,o:h.e.o,t,st:t==='port'?'':'unopened'});}}))});
+const c=h.cell,r=roomAt(c.x,c.y);
+if(r||S.mode==='drop')it.push('hr',{i:'pointer',l:'Use the cell instead',f:()=>openMenu({k:'cell',x:c.x,y:c.y,r},px,py)});}
+}else{
+const o=objAt(h.x,h.y),r=h.r;
+if(o){it.push({h:(o.label||OBJ[o.t][1])+(o.searched?' · searched':' · unsearched')});
+it.push({i:o.searched?'search-off':'check',l:o.searched?'Mark unsearched':'Mark searched',mut:1,f:()=>{o.searched=!o.searched;}});
+it.push({i:'tag',l:o.label?'Edit label':'Add label',f:()=>textDialog('Label this object',o.label||'',v=>{o.label=v;})});
+it.push({i:'trash',l:'Remove object',mut:1,f:()=>{S.objs=S.objs.filter(x=>x!==o);}});
+}else{it.push({h:r?r.name:'Open ground'});
+it.push({grid:(r?IN_OBJ:OUT_OBJ).map(t=>({badge:OBJ[t][0],l:OBJ[t][1],mut:1,f:()=>{S.objs.push({id:S.nid++,x:h.x,y:h.y,t,searched:false});}}))});}
+it.push('hr');
+const here=r?r.id:'out';
+if(S.current!==here)it.push({i:'map-pin',l:"We're here",mut:1,f:()=>{S.current=here;}});
+if(r){it.push({i:'pencil',l:'Rename room',f:()=>textDialog('Rename room',r.name,v=>{if(v)r.name=v;})});
+if(r.id!==S.start)it.push({i:'trash',l:'Delete room',mut:1,f:()=>delRoom(r)});}
+}
+return it;
+}
+function openMenu(h,px,py){
+menu.innerHTML='';
+for(const x of items(h,px,py)){
+if(x==='hr'){menu.appendChild(document.createElement('hr'));continue;}
+if(x.h){const d=document.createElement('div');d.className='h';d.textContent=x.h;menu.appendChild(d);continue;}
+if(x.grid){const g=document.createElement('div');g.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)';x.grid.forEach(y=>g.appendChild(mkBtn(y)));menu.appendChild(g);continue;}
+menu.appendChild(mkBtn(x));}
+menu.hidden=false;
+const W=wrap.clientWidth,H=wrap.clientHeight,mw=menu.offsetWidth,mh=menu.offsetHeight;
+menu.style.left=Math.max(8,Math.min(px,W-mw-8))+'px';menu.style.top=Math.max(8,Math.min(py,H-mh-8))+'px';
+}
+function ctx(cx,cy){if(!S||dlg.innerHTML)return;const h=hitAt(cx,cy);if(!h){setStatus("That's outside explored space. Open a door to map more.");return;}const b=wrap.getBoundingClientRect();openMenu(h,cx-b.left,cy-b.top);}
+function delRoom(r){S.rooms=S.rooms.filter(x=>x!==r);S.objs=S.objs.filter(o=>!(o.x>=r.x&&o.x<r.x+r.w&&o.y>=r.y&&o.y<r.y+r.h));
+if(S.mode==='ship')S.doors=S.doors.filter(d=>{const[a,b]=edgeCells(d);return roomAt(a[0],a[1])||roomAt(b[0],b[1]);});
+if(S.current===r.id)S.current=S.start;}
+function rectFor(d,dir,W,L,off){
+if(d.o==='h'){const x0=d.x-Math.floor((W-1)/2)+off;return dir==='down'?{x:x0,y:d.y,w:W,h:L}:{x:x0,y:d.y-L,w:W,h:L};}
+const y0=d.y-Math.floor((W-1)/2)+off;return dir==='right'?{x:d.x,y:y0,w:L,h:W}:{x:d.x-L,y:y0,w:L,h:W};}
+function mapDialog(d){
+const[a,b]=edgeCells(d),ra=roomAt(a[0],a[1]),rb=roomAt(b[0],b[1]);let dirs;
+if(ra&&!rb)dirs=[d.o==='h'?'down':'right'];else if(rb&&!ra)dirs=[d.o==='h'?'up':'left'];else if(!ra&&!rb)dirs=d.o==='h'?['down','up']:['right','left'];else return;
+const DN={down:'South',up:'North',right:'East',left:'West'};
+showDlg(`<p style="margin:0 0 4px;font-weight:500">What's beyond the ${DOOR_T[d.t].toLowerCase()}?</p>
+<p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">Width runs along the wall. Length runs away from the door.</p>
+<div class="cg-row"><label for="mName">Name</label><input id="mName" style="flex:1;min-width:0" maxlength="40"></div>
+<div class="cg-row"><label for="mKind">Type</label><select id="mKind"><option value="room">Room</option><option value="corridor">Corridor</option></select></div>
+${dirs.length>1?`<div class="cg-row"><label for="mDir">Extends</label><select id="mDir">${dirs.map(x=>`<option value="${x}">${DN[x]}</option>`).join('')}</select></div>`:''}
+<div class="cg-row"><label for="mW">Width (ft)</label><input id="mW" type="number" min="1" max="200" step="1" style="width:72px"><label for="mL" style="min-width:0">Length</label><input id="mL" type="number" min="1" max="200" step="1" style="width:72px"></div>
+<div class="cg-row"><label for="mO">Offset (ft)</label><input id="mO" type="number" step="1" value="0" style="width:72px"><span style="font-size:12px;color:var(--text-muted)">Positive shifts ${d.o==='h'?'east':'south'}</span></div>
+<div class="cg-err" id="mErr"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button id="mSkip">Skip for now</button><button id="mOk">Map it</button></div>`);
+const setDef=()=>{const c=$('mKind').value==='corridor';const n=S.rooms.filter(r=>(r.kind||'room')===$('mKind').value).length+1;$('mName').placeholder=(c?'Corridor ':'Room ')+n;$('mW').value=c?3:6;$('mL').value=c?15:6;};
+setDef();$('mKind').onchange=setDef;
+dlg.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',()=>{$('mErr').textContent='';}));
+const ok=()=>{const W=+$('mW').value,L=+$('mL').value,off=Math.round(+$('mO').value||0),err=m=>{$('mErr').textContent=m;};
+if(!Number.isInteger(W)||!Number.isInteger(L)||W<1||L<1||W>200||L>200)return err('Enter whole numbers from 1 to 200.');
+const dir=dirs.length>1?$('mDir').value:dirs[0],r=rectFor(d,dir,W,L,off);
+const touch=d.o==='h'?(d.x>=r.x&&d.x<r.x+r.w):(d.y>=r.y&&d.y<r.y+r.h);
+if(!touch)return err('That offset moves the space off the door. Try a smaller offset.');
+if(S.rooms.some(q=>r.x<q.x+q.w&&r.x+r.w>q.x&&r.y<q.y+q.h&&r.y+r.h>q.y))return err("That overlaps space you've already mapped. Adjust the size or offset.");
+const name=$('mName').value.trim()||$('mName').placeholder;
+pushUndo();S.rooms.push({id:S.nid++,name,kind:$('mKind').value,...r});d.st='open';route=null;closeDlg();save();ensureVisible(r);render();setStatus(`Mapped ${name} (${W} × ${L} ft).`);};
+$('mOk').onclick=ok;$('mSkip').onclick=()=>{closeDlg();setStatus("Door marked open. Right-click it later and choose Map what's beyond.");};
+dlg.querySelectorAll('input').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')ok();}));
+$('mName').focus();
+}
+function textDialog(title,val,cb){
+showDlg(`<p style="margin:0 0 10px;font-weight:500">${esc(title)}</p><input id="tIn" style="width:100%" maxlength="40"><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button id="tNo">Cancel</button><button id="tOk">Save</button></div>`);
+const i=$('tIn');i.value=val;i.focus();i.select();
+const ok=()=>{pushUndo();cb(i.value.trim());closeDlg();route=null;save();render();};
+$('tOk').onclick=ok;$('tNo').onclick=closeDlg;i.addEventListener('keydown',e=>{if(e.key==='Enter')ok();if(e.key==='Escape')closeDlg();});
+}
+function setupDlg(){
+const bs='height:auto;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;text-align:left;justify-content:flex-start;width:100%';
+showDlg(`<p style="margin:0 0 4px;font-weight:500">Where does the mission start?</p>
+<p style="margin:0 0 14px;font-size:13px;color:var(--text-secondary)">You begin with a 10 × 5 ft space on a 1 ft grid.${S?' This replaces your current map, so back up first if you want to keep it.':''}</p>
+<div style="display:grid;gap:8px">
+<button id="pShip" style="${bs}"><i class="ti ti-rocket" style="font-size:20px" aria-hidden="true"></i><span><span style="display:block;font-weight:500">Ship</span><span style="display:block;font-size:12px;color:var(--text-secondary)">You're inside. Only explored space is clickable.</span></span></button>
+<button id="pDrop" style="${bs}"><i class="ti ti-parachute" style="font-size:20px" aria-hidden="true"></i><span><span style="display:block;font-weight:500">Drop zone</span><span style="display:block;font-size:12px;color:var(--text-secondary)">You're outside. Place objects and entrances anywhere.</span></span></button>
+</div>${S?'<div style="text-align:right;margin-top:10px"><button id="pCancel">Cancel</button></div>':''}`);
+$('pShip').onclick=()=>newMap('ship');$('pDrop').onclick=()=>newMap('drop');if(S)$('pCancel').onclick=closeDlg;
+}
+function findRoute(){
+if(!S)return;
+const nm=id=>id==='out'?'outside':(S.rooms.find(r=>r.id===id)||{}).name;
+if(S.current==null||(S.current!=='out'&&!S.rooms.find(r=>r.id===S.current))){setStatus("Right-click a room and choose We're here first.");return;}
+if(S.current===S.start){route=null;render();setStatus(`You're already in ${nm(S.start)}.`);return;}
+const adj=new Map(),add=(a,b,d)=>{if(!adj.has(a))adj.set(a,[]);adj.get(a).push([b,d]);};
+for(const d of S.doors){if(d.t==='port'||d.st!=='open')continue;const[a,b]=edgeCells(d),ra=roomAt(a[0],a[1]),rb=roomAt(b[0],b[1]);
+const A=ra?ra.id:(S.mode==='drop'?'out':null),B=rb?rb.id:(S.mode==='drop'?'out':null);if(A==null||B==null||A===B)continue;add(A,B,d);add(B,A,d);}
+const prev=new Map([[S.current,null]]),q=[S.current];
+while(q.length){const n=q.shift();if(n===S.start)break;for(const[m,d]of adj.get(n)||[])if(!prev.has(m)){prev.set(m,[n,d]);q.push(m);}}
+if(!prev.has(S.start)){route=null;render();setStatus('No confirmed open route back. Check unopened, locked, or sealed doors.');return;}
+const chain=[];let n=S.start;while(n!==S.current){const[p,d]=prev.get(n);chain.unshift([n,d]);n=p;}
+const ctr=id=>{const r=S.rooms.find(x=>x.id===id);return r?[r.x+r.w/2,r.y+r.h/2]:null;};
+const pts=[];const c0=ctr(S.current);if(c0)pts.push(c0);
+for(const[node,d]of chain){pts.push(d.o==='h'?[d.x+0.5,d.y]:[d.x,d.y+0.5]);const c=ctr(node);if(c)pts.push(c);}
+route={pts};render();
+setStatus('Route: '+[S.current,...chain.map(c=>c[0])].map(nm).join(' → '));
+}
+function dl(name,href){const a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();}
+function backupDlg(){
+if(!S)return;const json=JSON.stringify({app:'cartographer',v:1,map:S});
+showDlg(`<p style="margin:0 0 4px;font-weight:500">Back up this map</p><p style="margin:0 0 10px;font-size:13px;color:var(--text-secondary)">Download the file, or copy the text and keep it somewhere safe.</p>
+<textarea id="bTxt" readonly rows="5" style="width:100%;font-family:var(--font-mono);font-size:12px"></textarea>
+<div class="cg-err" id="bMsg" style="color:var(--text-secondary)"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button id="bCopy">Copy text</button><button id="bFile">Download file</button><button id="bClose">Close</button></div>`);
+$('bTxt').value=json;
+$('bCopy').onclick=()=>{const t=$('bTxt');t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(json).then(()=>{$('bMsg').textContent='Copied';}).catch(()=>{$('bMsg').textContent=ok?'Copied':'Select the text and copy it manually.';});else $('bMsg').textContent=ok?'Copied':'Select the text and copy it manually.';};
+$('bFile').onclick=()=>{const stamp=new Date().toISOString().slice(0,10);dl(`cartographer-map-${stamp}.json`,URL.createObjectURL(new Blob([json],{type:'application/json'})));};
+$('bClose').onclick=closeDlg;
+}
+function importDlg(){
+showDlg(`<p style="margin:0 0 4px;font-weight:500">Import a map</p><p style="margin:0 0 10px;font-size:13px;color:var(--text-secondary)">Choose a backup file or paste backup text. This replaces the current map.</p>
+<input type="file" id="iFile" accept=".json,application/json" style="font-size:13px;margin-bottom:8px;max-width:100%;height:auto;padding:6px;border:none;background:transparent">
+<textarea id="iTxt" rows="5" style="width:100%;font-family:var(--font-mono);font-size:12px" placeholder='{"app":"cartographer", ...}'></textarea>
+<div class="cg-err" id="iErr"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button id="iNo">Cancel</button><button id="iOk">Load map</button></div>`);
+$('iFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('iTxt').value=r.result;$('iErr').textContent='';};r.readAsText(f);};
+$('iTxt').oninput=()=>{$('iErr').textContent='';};$('iNo').onclick=closeDlg;
+$('iOk').onclick=()=>{let o;try{o=JSON.parse($('iTxt').value);}catch(e){$('iErr').textContent="That isn't valid backup text. Check you copied all of it.";return;}
+const m=o&&o.map?o.map:o;
+if(!(m&&(m.mode==='ship'||m.mode==='drop')&&Array.isArray(m.rooms)&&m.rooms.length&&m.rooms.every(r=>[r.x,r.y,r.w,r.h].every(Number.isFinite))&&Array.isArray(m.doors)&&Array.isArray(m.objs))){$('iErr').textContent="That doesn't look like a Cartographer backup.";return;}
+if(S)pushUndo();S=m;S.nid=S.nid||Math.max(0,...S.rooms.map(r=>r.id),...S.doors.map(d=>d.id),...S.objs.map(o=>o.id))+1;route=null;closeDlg();save();fit();render();setStatus('Map loaded.');};
+}
+function exportImg(){
+if(!S)return;const b=bounds(),sc=32,W=Math.ceil(b.w*sc),H=Math.ceil(b.h*sc);
+const str=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}">${draw(b.x,b.y,b.w,b.h,1/sc,pal(),true,null)}</svg>`;
+const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(str);
+const img=new Image();
+img.onload=()=>{let png='';try{const c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(img,0,0);png=c.toDataURL('image/png');}catch(e){}
+showDlg(`<p style="margin:0 0 10px;font-weight:500">Map image</p><img src="${png||svgUrl}" alt="Exported map" style="display:block;max-width:100%;max-height:260px;margin:0 auto;border:0.5px solid var(--border);border-radius:var(--radius)">
+<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">${png?'<button id="xPng">Download PNG</button>':''}<button id="xSvg">Download SVG</button><button id="xClose">Close</button></div>`);
+if(png)$('xPng').onclick=()=>dl('cartographer-map.png',png);
+$('xSvg').onclick=()=>dl('cartographer-map.svg',URL.createObjectURL(new Blob([str],{type:'image/svg+xml'})));
+$('xClose').onclick=closeDlg;};
+img.src=svgUrl;
+}
+const ptrs=new Map();let drag=null,pinch=null,lpTimer=null,lastType='mouse';
+svg.addEventListener('pointerdown',e=>{
+lastType=e.pointerType;if(e.button===2)return;closeMenu();
+ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+try{svg.setPointerCapture(e.pointerId);}catch(err){}
+if(ptrs.size===2){clearTimeout(lpTimer);drag=null;const[p,q]=[...ptrs.values()];pinch={d:Math.hypot(p.x-q.x,p.y-q.y)||1,s:view.s};return;}
+drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y,moved:false,id:e.pointerId};
+if(e.pointerType!=='mouse'){clearTimeout(lpTimer);lpTimer=setTimeout(()=>{if(drag&&!drag.moved){const d=drag;drag=null;ctx(d.x,d.y);}},500);}
+});
+svg.addEventListener('pointermove',e=>{
+if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+if(pinch&&ptrs.size===2){const[p,q]=[...ptrs.values()],d=Math.hypot(p.x-q.x,p.y-q.y);zoomAt((p.x+q.x)/2,(p.y+q.y)/2,(pinch.s*d/pinch.d)/view.s);return;}
+if(drag&&drag.id===e.pointerId){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+if(!drag.moved&&Math.hypot(dx,dy)>6){drag.moved=true;clearTimeout(lpTimer);svg.style.cursor='grabbing';}
+if(drag.moved){view.x=drag.vx-dx/view.s;view.y=drag.vy-dy/view.s;render();}return;}
+if(e.pointerType==='mouse'&&S&&!dlg.innerHTML){const h=hitAt(e.clientX,e.clientY),k=hkey(h);if(k!==hovKey){hov=h;hovKey=k;render();}}
+});
+const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;clearTimeout(lpTimer);if(drag&&drag.id===e.pointerId)drag=null;svg.style.cursor='crosshair';};
+svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
+svg.addEventListener('pointerleave',()=>{if(hov){hov=null;hovKey='';render();}});
+svg.addEventListener('contextmenu',e=>{e.preventDefault();if(lastType!=='mouse')return;ctx(e.clientX,e.clientY);});
+svg.addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY<0?1.12:1/1.12);},{passive:false});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render());
+$('bIn').onclick=()=>{const b=svg.getBoundingClientRect();zoomAt(b.left+b.width/2,b.top+b.height/2,1.25);};
+$('bOut').onclick=()=>{const b=svg.getBoundingClientRect();zoomAt(b.left+b.width/2,b.top+b.height/2,0.8);};
+$('bFit').onclick=()=>{fit();render();};
+$('bUndo').onclick=()=>{if(!S||!undo.length){setStatus('Nothing to undo.');return;}S=JSON.parse(undo.pop());route=null;save();render();setStatus('Undone.');};
+$('bRoute').onclick=()=>{if(route){route=null;render();setStatus();}else findRoute();};
+$('bBackup').onclick=backupDlg;$('bImport').onclick=importDlg;$('bExport').onclick=exportImg;$('bNew').onclick=setupDlg;
+try{new ResizeObserver(()=>render()).observe(wrap);}catch(e){}
+try{const m=JSON.parse(localStorage.getItem(KEY)||'null');if(m&&m.rooms&&m.rooms.length)S=m;}catch(e){}
+fit();render();setStatus();if(!S)setupDlg();
+</script>
+</body>
+</html>
