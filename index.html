@@ -357,23 +357,32 @@ pushUndo();S.rooms.push({id:S.nid++,lv:d.lv,name,kind:$('mKind').value,...r});cl
 wireDlg(ok,'mSkip',()=>{closeDlg();setStatus("Door marked open. Right-click it later and choose Map what's beyond.");});
 $('mName').focus();}
 function levelDialog(o,dir){
-const nm=OBJ[o.t][1].toLowerCase();
+const nm=OBJ[o.t][1].toLowerCase(),lbl='font-size:13px;color:var(--text-secondary)';
 showDlg(`<p style="margin:0 0 4px;font-weight:500">What's ${dir==='up'?'above':'below'}?</p>
 <p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">This opens a new level as its own sheet, starting with the space the ${nm} ${o.t==='stairs'?'arrive':'arrives'} in.</p>
 <div class="cg-row"><label for="nLv">Level name</label><input id="nLv" style="flex:1;min-width:0" maxlength="40" placeholder="Level ${S.levels.length+1}"></div>
 <div class="cg-row"><label for="mName">Space name</label><input id="mName" style="flex:1;min-width:0" maxlength="40"></div>${KINDROW}${DIMROW}
-<p style="margin:-4px 0 8px;font-size:12px;color:var(--text-muted)">Width runs east–west. Length runs north–south.</p>
+<div class="cg-row"><label for="sRow">${OBJ[o.t][1]} at</label><span style="${lbl}">Row</span><select id="sRow" style="width:72px"></select><span style="${lbl}">Column</span><select id="sCol" style="width:72px"></select></div>
+<p style="margin:-4px 0 8px;font-size:12px;color:var(--text-muted)">Width runs east–west and length runs north–south. Row 1, column 1 is the top-left corner.</p>
 <div class="cg-err" id="mErr"></div>
 <div style="display:flex;gap:8px;justify-content:flex-end"><button id="mNo">Cancel</button><button id="mOk">Create level</button></div>`);
+const fillPos=reset=>{const dm=dims();if(!dm)return;const[W,L]=dm;
+const fill=(el,n)=>{const prev=+el.value;el.innerHTML=Array.from({length:n},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('');el.value=String(!reset&&prev>=1&&prev<=n?prev:Math.floor(n/2)+1);};
+fill($('sRow'),L);fill($('sCol'),W);};
 const ok=()=>{const dm=dims();if(!dm){$('mErr').textContent='Enter whole numbers from 1 to 500.';return;}
-const[W,L]=dm,lname=$('nLv').value.trim()||$('nLv').placeholder,rname=$('mName').value.trim()||$('mName').placeholder,kind=$('mKind').value;
+const[W,L]=dm,row=+$('sRow').value,col=+$('sCol').value;
+if(!(row>=1&&row<=L&&col>=1&&col<=W)){$('mErr').textContent='Pick a row and column inside the space.';return;}
+const lname=$('nLv').value.trim()||$('nLv').placeholder,rname=$('mName').value.trim()||$('mName').placeholder,kind=$('mKind').value;
 pushUndo();const cur=lvObj(o.lv);
 S.levels.forEach(l=>{if(dir==='up'&&l.z>cur.z)l.z++;if(dir==='down'&&l.z<cur.z)l.z--;});
 const lid=S.nid++;S.levels.push({id:lid,name:lname,z:dir==='up'?cur.z+1:cur.z-1});
 S.rooms.push({id:S.nid++,lv:lid,x:0,y:0,w:W,h:L,name:rname,kind});
-S.objs.push({id:S.nid++,lv:lid,x:Math.floor(W/2),y:Math.floor(L/2),t:o.t,g:o.g,searched:false});
-closeDlg();route=null;views[S.lvl]={...view};S.lvl=lid;tool='map';hov=null;fit();svg.style.cursor=cursorFor();save();render();setStatus(`Created ${lname}. The ${nm} ${o.t==='stairs'?'arrive':'arrives'} in ${rname}.`);};
-wireDlg(ok,'mNo',closeDlg);$('nLv').focus();}
+S.objs.push({id:S.nid++,lv:lid,x:col-1,y:row-1,t:o.t,g:o.g,searched:false});
+closeDlg();route=null;views[S.lvl]={...view};S.lvl=lid;tool='map';hov=null;fit();svg.style.cursor=cursorFor();save();render();setStatus(`Created ${lname}. The ${nm} ${o.t==='stairs'?'arrive':'arrives'} in ${rname} at row ${row}, column ${col}.`);};
+wireDlg(ok,'mNo',closeDlg);
+$('mKind').onchange=()=>{kindDefaults();fillPos(true);};
+$('mW').addEventListener('input',()=>fillPos(false));$('mL').addEventListener('input',()=>fillPos(false));
+fillPos(true);$('nLv').focus();}
 function linkDialog(o){
 const opts=[...S.levels].sort((a,b)=>b.z-a.z).filter(l=>!members(o.g).some(m=>m.lv===l.id)),nm=OBJ[o.t][1].toLowerCase();
 showDlg(`<p style="margin:0 0 4px;font-weight:500">Link to an existing level</p>
@@ -543,7 +552,7 @@ $('bUndo').onclick=()=>{if(!S||!undo.length){setStatus('Nothing to undo.');retur
 $('bRoute').onclick=()=>{if(route){route=null;render();setStatus();}else findRoute();};
 $('bBackup').onclick=backupDlg;$('bImport').onclick=importDlg;$('bExport').onclick=exportImg;$('bNew').onclick=setupDlg;
 try{new ResizeObserver(()=>req('all')).observe(wrap);}catch(e){}
-try{const m=JSON.parse(localStorage.getItem(KEY)||'null');if(m&&m.rooms&&m.rooms.length)S=migrate(m);}catch(e){}
+try{const m=JSON.parse(localStorage.getItem(KEY)||'null');if(m&&m.rooms&&m.rooms.length)S=m&&migrate(m);}catch(e){}
 fit();render();setStatus();if(!S)setupDlg();
 </script>
 </body>
