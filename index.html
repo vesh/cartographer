@@ -11,22 +11,25 @@
 @media (prefers-color-scheme:dark){:root{--surface-0:#1a1a19;--surface-1:#232322;--surface-2:#2a2a28;--surface-3:#31312f;--text-primary:#f1efe8;--text-secondary:#b4b2a9;--text-muted:#888780;--text-danger:#f09595;--text-accent:#85b7eb;--bg-accent:#0c447c;--border:rgba(241,239,232,0.14);--border-strong:rgba(241,239,232,0.28);--fill-ghost-hover:rgba(241,239,232,0.08)}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--surface-0);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.5}
-main{max-width:1200px;margin:0 auto;padding:16px}
+main{max-width:1400px;margin:0 auto;padding:16px}
 button{font:inherit;font-size:14px;color:var(--text-primary);background:transparent;border:0.5px solid var(--border-strong);border-radius:var(--radius);height:36px;padding:0 12px;cursor:pointer}
 button:hover{background:var(--surface-1)}
 input,select,textarea{font:inherit;font-size:14px;color:var(--text-primary);background:var(--surface-2);border:0.5px solid var(--border-strong);border-radius:var(--radius);height:34px;padding:0 8px}
 textarea{height:auto;padding:8px}
 .cg-btn{font-size:13px;height:32px;padding:0 10px;display:inline-flex;align-items:center;gap:6px}
+.cg-btn.on{background:var(--bg-accent);color:var(--text-accent);border-color:var(--text-accent)}
 .cg-menu{position:absolute;z-index:5;background:var(--surface-3);border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:4px;min-width:200px;max-width:calc(100% - 16px);font-size:13px}
 .cg-menu .h{padding:6px 10px 4px;color:var(--text-secondary);font-size:12px}
 .cg-menu button{display:flex;width:100%;border:none;background:transparent;justify-content:flex-start;text-align:left;height:30px;padding:0 10px;font-size:13px;gap:8px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cg-menu button:hover{background:var(--fill-ghost-hover)}
 .cg-menu hr{border:none;border-top:0.5px solid var(--border);margin:4px 0}
 .cg-dlg{position:absolute;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:6}
-.cg-card{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;width:min(380px,92%);font-size:14px}
+.cg-card{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;width:min(400px,92%);font-size:14px;max-height:calc(100% - 16px);overflow:auto}
 .cg-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
-.cg-row label{font-size:13px;color:var(--text-secondary);min-width:84px}
+.cg-row label{font-size:13px;color:var(--text-secondary);min-width:88px}
 .cg-err{font-size:13px;color:var(--text-danger);min-height:18px;margin-bottom:6px}
+.lg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-secondary);margin:0 0 8px;align-items:center}
+.sw{display:inline-block;vertical-align:middle;margin-right:5px}
 </style>
 </head>
 <body>
@@ -37,6 +40,10 @@ textarea{height:auto;padding:8px}
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px">
 <span id="modeTag" style="font-size:12px;padding:4px 10px;border-radius:var(--radius);background:var(--bg-accent);color:var(--text-accent)">New map</span>
+<i class="ti ti-stack-2" aria-hidden="true" style="font-size:18px;color:var(--text-secondary);margin-left:4px"></i>
+<select id="lvSel" aria-label="Level" style="height:32px;font-size:13px;max-width:170px"></select>
+<button class="cg-btn" id="bLvRen" aria-label="Rename level"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+<button class="cg-btn" id="bLvDel" aria-label="Delete level"><i class="ti ti-trash" aria-hidden="true"></i></button>
 <button class="cg-btn" id="bUndo"><i class="ti ti-arrow-back-up" aria-hidden="true"></i>Undo</button>
 <button class="cg-btn" id="bRoute"><i class="ti ti-route" aria-hidden="true"></i>Route to safety</button>
 <span style="flex:1"></span>
@@ -44,22 +51,43 @@ textarea{height:auto;padding:8px}
 <button class="cg-btn" id="bFit">Fit</button>
 <button class="cg-btn" id="bIn" aria-label="Zoom in"><i class="ti ti-plus" aria-hidden="true"></i></button>
 </div>
-<div id="wrap" style="position:relative;height:calc(100vh - 250px);min-height:380px;border:0.5px solid var(--border);border-radius:12px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;background:var(--surface-2)">
+<div id="toolBar" style="display:none;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px">
+<span style="font-size:12px;color:var(--text-secondary);margin-right:2px">Terrain</span>
+<button class="cg-btn" data-tool="map"><i class="ti ti-hand-move" aria-hidden="true"></i>Map</button>
+<button class="cg-btn" data-tool="line"><i class="ti ti-line" aria-hidden="true"></i>Draw edge</button>
+<button class="cg-btn" data-tool="paint"><i class="ti ti-brush" aria-hidden="true"></i>Paint area</button>
+<button class="cg-btn" data-tool="erase"><i class="ti ti-eraser" aria-hidden="true"></i>Erase</button>
+<select id="terrType" aria-label="Terrain type" style="height:32px;font-size:13px"></select>
+</div>
+<div id="wrap" style="position:relative;height:calc(100vh - 270px);min-height:380px;border:0.5px solid var(--border);border-radius:12px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;background:var(--surface-2)">
 <svg id="map" width="100%" height="100%" style="display:block;cursor:crosshair"></svg>
 <div id="menu" class="cg-menu" hidden></div>
 <div id="dlg"></div>
 </div>
 <div id="status" style="font-size:13px;color:var(--text-secondary);margin:8px 0 6px;min-height:20px"></div>
-<div style="display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text-secondary);margin:0 0 10px;align-items:center">
-<span><span style="display:inline-block;width:14px;height:4px;background:#BA7517;vertical-align:middle;margin-right:5px"></span>Unopened</span>
-<span><span style="display:inline-block;width:14px;height:4px;background:#1D9E75;vertical-align:middle;margin-right:5px"></span>Open</span>
-<span><span style="display:inline-block;width:14px;height:4px;background:#E24B4A;vertical-align:middle;margin-right:5px"></span>Locked</span>
-<span><span style="display:inline-block;width:14px;height:4px;background:#7F77DD;vertical-align:middle;margin-right:5px"></span>Sealed</span>
-<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #BA7517;background:rgba(239,159,39,0.28);vertical-align:middle;margin-right:5px"></span>Unsearched</span>
-<span><span style="display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #888780;vertical-align:middle;margin-right:5px"></span>Searched</span>
+<div class="lg">
+<span><span class="sw" style="width:14px;height:4px;background:#BA7517"></span>Unopened</span>
+<span><span class="sw" style="width:14px;height:4px;background:#1D9E75"></span>Open</span>
+<span><span class="sw" style="width:14px;height:4px;background:#E24B4A"></span>Locked</span>
+<span><span class="sw" style="width:14px;height:4px;background:#7F77DD"></span>Sealed</span>
+<span><span class="sw" style="width:11px;height:11px;border-radius:50%;border:1.5px solid #BA7517;background:rgba(239,159,39,0.28)"></span>Unsearched</span>
+<span><span class="sw" style="width:11px;height:11px;border-radius:50%;border:1.5px solid #888780"></span>Searched</span>
+<span><span class="sw" style="width:12px;height:12px;border-radius:2px;border:1.5px solid #7F77DD;background:rgba(127,119,221,0.2)"></span>Stairs or elevator</span>
 <span>Airlock double line, blast door thick, hatch dot, vent dashed, viewport thin gray</span>
 </div>
-<div style="display:flex;flex-wrap:wrap;gap:6px">
+<div class="lg" id="terrLegend" style="display:none">
+<span><span class="sw" style="width:16px;height:4px;background:#D85A30"></span>Cliff edge</span>
+<span><span class="sw" style="width:16px;height:6px;background:#888780"></span>Large barrier</span>
+<span><span class="sw" style="width:16px;border-top:2px dashed #888780"></span>Fence</span>
+<span><span class="sw" style="width:16px;border-top:2px dotted #D85A30"></span>Ledge (climbable)</span>
+<span><span class="sw" style="width:12px;height:12px;background:rgba(20,20,20,0.55)"></span>Chasm</span>
+<span><span class="sw" style="width:12px;height:12px;background:rgba(55,138,221,0.38)"></span>Deep water</span>
+<span><span class="sw" style="width:12px;height:12px;background:rgba(186,117,23,0.3)"></span>Rubble</span>
+<span><span class="sw" style="width:12px;height:12px;background:rgba(226,75,74,0.25)"></span>Hazard zone</span>
+<span><span class="sw" style="width:12px;height:12px;background:rgba(99,153,34,0.28)"></span>Rough ground</span>
+<span>Cliffs, barriers, fences, chasms, and deep water block the route to safety</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
 <button class="cg-btn" id="bBackup"><i class="ti ti-device-floppy" aria-hidden="true"></i>Backup</button>
 <button class="cg-btn" id="bImport"><i class="ti ti-upload" aria-hidden="true"></i>Import</button>
 <button class="cg-btn" id="bExport"><i class="ti ti-photo" aria-hidden="true"></i>Export image</button>
@@ -69,101 +97,180 @@ textarea{height:auto;padding:8px}
 <script>
 const $=id=>document.getElementById(id);
 const svg=$('map'),wrap=$('wrap'),menu=$('menu'),dlg=$('dlg'),statusEl=$('status');
+svg.innerHTML='<g id="gG"></g><g id="gM"></g><g id="gH"></g>';
+const gG=$('gG'),gM=$('gM'),gH=$('gH');
 const KEY='cartographer-map-v1';
 const DOOR_C={unopened:'#BA7517',open:'#1D9E75',locked:'#E24B4A',sealed:'#7F77DD'};
 const DOOR_T={door:'Door',airlock:'Airlock',hatch:'Hatch',blast:'Blast door',vent:'Vent',port:'Viewport'};
 const DOOR_I={door:'door',airlock:'air-conditioning',hatch:'circle-dot',blast:'shield',vent:'wind',port:'window'};
-const OBJ={unknown:['?','Unsearched object'],table:['T','Table'],terminal:['C','Computer terminal'],locker:['L','Locker'],crate:['X','Crate'],cryo:['P','Cryopod'],reader:['K','Keycard reader'],body:['B','Body'],hazard:['!','Hazard'],note:['N','Note'],wreck:['W','Wreckage'],debris:['D','Debris'],beacon:['S','Beacon'],vehicle:['V','Vehicle']};
-const IN_OBJ=['unknown','table','terminal','locker','crate','cryo','reader','body','hazard','note'];
+const OBJ={stairs:['S','Stairs'],elevator:['E','Elevator'],unknown:['?','Unsearched object'],table:['T','Table'],terminal:['C','Computer terminal'],locker:['L','Locker'],crate:['X','Crate'],cryo:['P','Cryopod'],reader:['K','Keycard reader'],body:['B','Body'],hazard:['!','Hazard'],note:['N','Note'],wreck:['W','Wreckage'],debris:['D','Debris'],beacon:['S','Beacon'],vehicle:['V','Vehicle']};
+const LINK=new Set(['stairs','elevator']);
+const IN_OBJ=['stairs','elevator','unknown','table','terminal','locker','crate','cryo','reader','body','hazard','note'];
 const OUT_OBJ=['unknown','crate','wreck','debris','hazard','beacon','vehicle','body','note'];
-let S=null,undo=[],view={x:0,y:0,s:24},route=null,hov=null,hovKey='';
+const LINE_T={cliff:{n:'Cliff edge',c:'#D85A30',w:4,block:1},barrier:{n:'Large barrier',c:'#888780',w:6,block:1},fence:{n:'Fence',c:'#888780',w:2.5,dash:[6,4],block:1},ledge:{n:'Ledge (climbable)',c:'#D85A30',w:2,dash:[2,4],block:0}};
+const ZONE_T={chasm:{n:'Chasm',f:'rgba(20,20,20,0.55)',block:1},water:{n:'Deep water',f:'rgba(55,138,221,0.38)',block:1},rubble:{n:'Rubble',f:'rgba(186,117,23,0.3)'},hazard:{n:'Hazard zone',f:'rgba(226,75,74,0.25)'},rough:{n:'Rough ground',f:'rgba(99,153,34,0.28)'}};
+let S=null,undo=[],view={x:0,y:0,s:24},views={},route=null,hov=null,hovKey='',tool='map',lineType='cliff',zoneType='chasm',pending=null,P=null,dr=null;
 const probe=document.createElement('div');probe.style.display='none';wrap.appendChild(probe);
 function cv(v,p){probe.style[p]='';probe.style[p]=v;return getComputedStyle(probe)[p];}
-function pal(){let bg=cv('var(--surface-2)','backgroundColor');if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent')bg='#ffffff';return{text:cv('var(--text-primary)','color'),muted:cv('var(--text-secondary)','color'),bg,grid:'rgba(136,135,128,0.35)'};}
+function pal(){let bg=cv('var(--surface-2)','backgroundColor');if(!bg||bg==='rgba(0, 0, 0, 0)'||bg==='transparent')bg='#ffffff';return{text:cv('var(--text-primary)','color'),muted:cv('var(--text-secondary)','color'),bg,grid:'rgb(136,135,128)'};}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function roomAt(x,y){return S.rooms.find(r=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h);}
-function doorAt(e){return S.doors.find(d=>d.x===e.x&&d.y===e.y&&d.o===e.o);}
-function objAt(x,y){return S.objs.find(o=>o.x===x&&o.y===y);}
+function roomAt(x,y,lv=S.lvl){return S.rooms.find(r=>r.lv===lv&&x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h);}
+function doorAt(e,lv=S.lvl){return S.doors.find(d=>d.lv===lv&&d.x===e.x&&d.y===e.y&&d.o===e.o);}
+function objAt(x,y,lv=S.lvl){return S.objs.find(o=>o.lv===lv&&o.x===x&&o.y===y);}
+function zoneAt(x,y,lv=S.lvl){return S.cells[lv+'|'+x+'|'+y];}
+function lineKeys(l){const k=[];for(let i=0;i<l.pts.length-1;i++){const[a,b]=l.pts[i],[c,d]=l.pts[i+1];k.push(b===d?'h'+Math.min(a,c)+','+b:'v'+a+','+Math.min(b,d));}return k;}
+function lineAt(e){const k=e.o+e.x+','+e.y;return S.lines.find(l=>l.lv===S.lvl&&lineKeys(l).includes(k));}
 function edgeCells(d){return d.o==='h'?[[d.x,d.y-1],[d.x,d.y]]:[[d.x-1,d.y],[d.x,d.y]];}
-function beyondEmpty(d){const[a,b]=edgeCells(d);return !roomAt(a[0],a[1])||!roomAt(b[0],b[1]);}
+function beyondEmpty(d){const[a,b]=edgeCells(d);return !roomAt(a[0],a[1],d.lv)||!roomAt(b[0],b[1],d.lv);}
+function lvObj(id){return S.levels.find(l=>l.id===id);}
+function lvName(id){const l=lvObj(id);return l?l.name:'?';}
+function groundLv(){const r=S.rooms.find(r=>r.id===S.start);return r?r.lv:S.levels[0].id;}
+function openLevel(lv){return !!S&&S.mode==='drop'&&lv===groundLv();}
+function members(g){return S.objs.filter(o=>o.g===g);}
+function grp(g){return S.groups.find(x=>x.id===g);}
+function cleanGroups(){S.groups=S.groups.filter(g=>S.objs.some(o=>o.g===g.id));if(pending&&!grp(pending.g))pending=null;}
+function linkTargets(o){return[...new Set(members(o.g).filter(m=>m.lv!==o.lv).map(m=>lvName(m.lv)))];}
 function tip(d){return (d.label?d.label+' · ':'')+DOOR_T[d.t]+(d.t==='port'?'':' · '+d.st);}
+function objTip(o){if(LINK.has(o.t)){const t=linkTargets(o),g=grp(o.g);return (o.label?o.label+' · ':'')+OBJ[o.t][1]+' · '+(t.length?'to '+t.join(', '):'not linked')+(g&&g.st==='blocked'?(o.t==='elevator'?' · out of service':' · blocked'):'');}return (o.label||OBJ[o.t][1])+(o.searched?' · searched':' · unsearched');}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 function pushUndo(){undo.push(JSON.stringify(S));if(undo.length>60)undo.shift();}
-function hint(){if(!S)return 'Choose a starting point.';return S.mode==='ship'?'Right-click (or long-press) a wall or a cell inside explored space. Drag to pan; ctrl+scroll or pinch to zoom.':'Right-click (or long-press) anywhere to add objects or entrances. Drag to pan; ctrl+scroll or pinch to zoom.';}
-function setStatus(m){statusEl.textContent=m||hint();}
+function clearCells(lv,r){for(const k in S.cells){const a=k.split('|');if(+a[0]===lv&&+a[1]>=r.x&&+a[1]<r.x+r.w&&+a[2]>=r.y&&+a[2]<r.y+r.h)delete S.cells[k];}}
+function hint(){if(!S)return 'Choose a starting point.';const o=openLevel(S.lvl);
+if(o&&tool==='line')return `Drag along the grid to draw a ${LINE_T[lineType].n.toLowerCase()}. Pinch, two-finger drag, shift-drag, or middle-click drag to pan.`;
+if(o&&tool==='paint')return `Drag to paint ${ZONE_T[zoneType].n.toLowerCase()}. Rooms stay clear. Pinch, two-finger drag, shift-drag, or middle-click drag to pan.`;
+if(o&&tool==='erase')return 'Drag over painted areas or drawn edges to erase them.';
+return o?'Right-click (or long-press) anywhere to add objects or entrances. Drag to pan; scroll or pinch to zoom.':'Right-click (or long-press) a wall or a cell inside explored space. Drag to pan; scroll or pinch to zoom.';}
+function setStatus(m){if(!m&&pending){statusEl.innerHTML=`Right-click (or long-press) a cell inside a room to place the other end of the ${OBJ[pending.t][1].toLowerCase()}. <button class="cg-btn" id="pendNo" style="height:26px;margin-left:6px">Cancel</button>`;$('pendNo').onclick=()=>{pending=null;setStatus();};return;}statusEl.textContent=m||hint();}
 function newMap(mode){
-S={mode,rooms:[{id:1,x:0,y:0,w:10,h:5,name:mode==='ship'?'Dropship Airlock':'Drop Zone',kind:mode==='ship'?'room':'zone'}],doors:[],objs:[],nid:2,start:1,current:1};
-if(mode==='drop'){
-[['North',4,0,'h'],['South',4,5,'h'],['West',0,2,'v'],['East',10,2,'v']].forEach(([dir,x,y,o])=>S.doors.push({id:S.nid++,x,y,o,t:'door',st:'open',label:'Egress '+dir}));
+S={v:2,mode,levels:[{id:1,name:mode==='ship'?'Level 1':'Ground level',z:0}],lvl:1,rooms:[{id:2,lv:1,x:0,y:0,w:10,h:5,name:mode==='ship'?'Dropship Airlock':'Drop Zone',kind:mode==='ship'?'room':'zone'}],doors:[],objs:[],groups:[],lines:[],cells:{},nid:3,start:2,current:2};
+if(mode==='drop')[['North',4,0,'h'],['South',4,5,'h'],['West',0,2,'v'],['East',10,2,'v']].forEach(([dir,x,y,o])=>S.doors.push({id:S.nid++,lv:1,x,y,o,t:'door',st:'open',label:'Egress '+dir}));
+undo=[];route=null;views={};pending=null;tool='map';save();closeDlg();fit();render();setStatus();
 }
-undo=[];route=null;save();closeDlg();fit();render();setStatus();
-}
+function migrate(m){
+const ids=[...(m.rooms||[]),...(m.doors||[]),...(m.objs||[]),...(m.lines||[]),...(m.groups||[]),...(m.levels||[])].map(o=>+o.id||0);
+m.nid=Math.max(m.nid||0,...ids,0)+1;
+if(!m.levels){const lid=m.nid++;m.levels=[{id:lid,name:'Level 1',z:0}];['rooms','doors','objs'].forEach(k=>(m[k]||[]).forEach(o=>{o.lv=lid;}));m.lvl=lid;}
+m.doors=m.doors||[];m.objs=m.objs||[];m.groups=m.groups||[];m.lines=m.lines||[];m.cells=m.cells||{};
+if(!m.levels.some(l=>l.id===m.lvl))m.lvl=m.levels[0].id;
+if(m.current==='out')m.current=m.start;
+m.v=2;return m;}
 function hit(wx,wy){
-const cx=Math.floor(wx),cy=Math.floor(wy),fx=wx-cx,fy=wy-cy,m=Math.min(fx,1-fx,fy,1-fy);
+const open=openLevel(S.lvl),cx=Math.floor(wx),cy=Math.floor(wy),fx=wx-cx,fy=wy-cy,m=Math.min(fx,1-fx,fy,1-fy);
 let e=null;
 if(m<0.22){if(m===fy)e={x:cx,y:cy,o:'h'};else if(m===1-fy)e={x:cx,y:cy+1,o:'h'};else if(m===fx)e={x:cx,y:cy,o:'v'};else e={x:cx+1,y:cy,o:'v'};}
 if(e){const[a,b]=edgeCells(e),ra=roomAt(a[0],a[1]),rb=roomAt(b[0],b[1]),cell={x:cx,y:cy};
-if(doorAt(e))return{k:'edge',e,cell};
+if(doorAt(e)||lineAt(e))return{k:'edge',e,cell};
 if(ra!==rb)return{k:'edge',e,cell};
-if(!ra&&S.mode==='drop'&&m<0.14)return{k:'edge',e,cell};}
+if(!ra&&open&&m<0.14)return{k:'edge',e,cell};}
 const r=roomAt(cx,cy);
-if(!r&&S.mode==='ship')return null;
+if(!r&&!open)return null;
 return{k:'cell',x:cx,y:cy,r};
 }
 function toWorld(cx,cy){const b=svg.getBoundingClientRect();return[view.x+(cx-b.left)/view.s,view.y+(cy-b.top)/view.s];}
 function hitAt(cx,cy){const[w,h]=toWorld(cx,cy);return hit(w,h);}
-function hkey(h){return h?(h.k==='edge'?'e'+h.e.x+','+h.e.y+h.e.o:'c'+h.x+','+h.y):'';}
-function draw(x0,y0,w,h,px,P,bg,hv){
-let o='<g font-family="system-ui, -apple-system, Segoe UI, sans-serif">';
-if(bg)o+=`<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="${P.bg}"/>`;
-for(let g=Math.floor(x0);g<=x0+w;g++)o+=`<line x1="${g}" y1="${y0}" x2="${g}" y2="${y0+h}" stroke="${P.grid}" stroke-width="${px*(g%5?0.6:1.4)}"/>`;
-for(let g=Math.floor(y0);g<=y0+h;g++)o+=`<line x1="${x0}" y1="${g}" x2="${x0+w}" y2="${g}" stroke="${P.grid}" stroke-width="${px*(g%5?0.6:1.4)}"/>`;
-if(!S)return o+'</g>';
-for(const r of S.rooms)o+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${r.kind==='corridor'?'rgba(136,135,128,0.18)':r.kind==='zone'?'rgba(99,153,34,0.12)':'rgba(55,138,221,0.10)'}" stroke="${P.text}" stroke-width="${2*px}"${r.kind==='zone'?` stroke-dasharray="${6*px} ${4*px}"`:''}/>`;
-if(hv&&hv.k==='cell')o+=`<rect x="${hv.x}" y="${hv.y}" width="1" height="1" fill="rgba(55,138,221,0.22)"/>`;
+function cl(v){return Math.max(0,Math.min(1,v));}
+function drawGrid(x0,y0,w,h,s,P){
+let o='';const tier=(step,skip,op,wd)=>{if(op<=0.01)return;let d='';
+for(let g=Math.ceil(x0/step)*step;g<=x0+w;g+=step){if(skip&&g%skip===0)continue;d+=`M${g} ${y0}V${y0+h}`;}
+for(let g=Math.ceil(y0/step)*step;g<=y0+h;g+=step){if(skip&&g%skip===0)continue;d+=`M${x0} ${g}H${x0+w}`;}
+if(d)o+=`<path d="${d}" fill="none" stroke="${P.grid}" stroke-opacity="${op.toFixed(2)}" stroke-width="${wd}" vector-effect="non-scaling-stroke"/>`;};
+tier(1,5,cl((s-6)/8)*0.4,0.6);tier(5,25,cl((s-1.2)/3)*0.6,1);tier(25,0,0.75,1.3);
+return o;}
+function drawMain(lv,px,P){
+const s=1/px;let o='<g font-family="system-ui, -apple-system, Segoe UI, sans-serif">';
+const rows={};for(const k in S.cells){const a=k.split('|');if(+a[0]!==lv)continue;(rows[a[2]]=rows[a[2]]||[]).push([+a[1],S.cells[k]]);}
+for(const y in rows){const a=rows[y].sort((p,q)=>p[0]-q[0]);let i=0;while(i<a.length){let j=i;while(j+1<a.length&&a[j+1][0]===a[j][0]+1&&a[j+1][1]===a[i][1])j++;const z=ZONE_T[a[i][1]];if(z)o+=`<rect x="${a[i][0]}" y="${y}" width="${j-i+1}" height="1" fill="${z.f}"/>`;i=j+1;}}
+const RM=S.rooms.filter(r=>r.lv===lv);
+for(const r of RM)o+=`<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${r.kind==='corridor'?'rgba(136,135,128,0.18)':r.kind==='zone'?'rgba(99,153,34,0.12)':'rgba(55,138,221,0.10)'}" stroke="${P.text}" stroke-width="${2*px}"${r.kind==='zone'?` stroke-dasharray="${6*px} ${4*px}"`:''}/>`;
+for(const l of S.lines){if(l.lv!==lv)continue;const t=LINE_T[l.t]||LINE_T.barrier;
+o+=`<polyline points="${l.pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${t.c}" stroke-width="${t.w*px}" stroke-linecap="round" stroke-linejoin="round"${t.dash?` stroke-dasharray="${t.dash.map(n=>n*px).join(' ')}"`:''}><title>${esc(t.n+(l.label?' · '+l.label:''))}</title></polyline>`;
+if(l.label){const m=l.pts[Math.floor(l.pts.length/2)];o+=`<text x="${m[0]+4*px}" y="${m[1]-4*px}" font-size="${11*px}" fill="${t.c}">${esc(l.label)}</text>`;}}
 const fs=12*px;
-for(const r of S.rooms){const here=S.current===r.id;o+=`<text x="${r.x+0.15}" y="${r.y+0.1+fs}" font-size="${fs}" fill="${here?'#1D9E75':P.muted}">${esc(r.name)}${here?' · you are here':''}</text>`;}
-for(const d of S.doors){
+for(const r of RM){if(r.w*s<28)continue;const here=S.current===r.id;o+=`<text x="${r.x+0.15}" y="${r.y+0.1+fs}" font-size="${fs}" fill="${here?'#1D9E75':P.muted}">${esc(r.name)}${here?' · you are here':''}</text>`;}
+for(const d of S.doors){if(d.lv!==lv)continue;
 const H=d.o==='h',mx=H?d.x+0.5:d.x,my=H?d.y:d.y+0.5;
 const seg=(off,c,wd,ex='')=>H?`<line x1="${d.x+0.1}" y1="${d.y+off}" x2="${d.x+0.9}" y2="${d.y+off}" stroke="${c}" stroke-width="${wd}" ${ex}/>`:`<line x1="${d.x+off}" y1="${d.y+0.1}" x2="${d.x+off}" y2="${d.y+0.9}" stroke="${c}" stroke-width="${wd}" ${ex}/>`;
-const c=d.t==='port'?P.muted:(DOOR_C[d.st]||DOOR_C.unopened);
+const c=d.t==='port'?P.muted:(DOOR_C[d.st]||DOOR_C.unopened),mw=3*px;
 o+=`<g><title>${esc(tip(d))}</title>`+seg(0,P.bg,Math.max(0.14,5*px));
 if(d.t==='port')o+=seg(-0.06,c,Math.max(0.04,1.5*px))+seg(0.06,c,Math.max(0.04,1.5*px));
-else if(d.t==='airlock')o+=seg(-0.08,c,0.1)+seg(0.08,c,0.1);
-else if(d.t==='blast')o+=seg(0,c,0.34);
-else if(d.t==='vent')o+=seg(0,c,0.18,'stroke-dasharray="0.12 0.08"');
-else o+=seg(0,c,0.2);
-if(d.t==='hatch')o+=`<circle cx="${mx}" cy="${my}" r="0.17" fill="${c}"/>`;
-if(d.label)o+=`<text x="${mx+(H?0:0.25)}" y="${my+(H?-0.25:0.1)}" font-size="${11*px}" fill="${P.muted}" text-anchor="${H?'middle':'start'}">${esc(d.label)}</text>`;
+else if(d.t==='airlock')o+=seg(-0.08,c,Math.max(0.1,mw/2))+seg(0.08,c,Math.max(0.1,mw/2));
+else if(d.t==='blast')o+=seg(0,c,Math.max(0.34,mw*1.5));
+else if(d.t==='vent')o+=seg(0,c,Math.max(0.18,mw),'stroke-dasharray="0.12 0.08"');
+else o+=seg(0,c,Math.max(0.2,mw));
+if(d.t==='hatch')o+=`<circle cx="${mx}" cy="${my}" r="${Math.max(0.17,3*px)}" fill="${c}"/>`;
+if(d.label&&s>=6)o+=`<text x="${mx+(H?0:0.25)}" y="${my+(H?-0.25:0.1)}" font-size="${11*px}" fill="${P.muted}" text-anchor="${H?'middle':'start'}">${esc(d.label)}</text>`;
 o+='</g>';}
-for(const b of S.objs){const cx=b.x+0.5,cy=b.y+0.5,r=Math.max(0.36,9*px),f=Math.max(0.44,11*px),[ch,nm]=OBJ[b.t]||OBJ.unknown;
-o+=`<g><title>${esc((b.label||nm)+(b.searched?' · searched':' · unsearched'))}</title><circle cx="${cx}" cy="${cy}" r="${r}" fill="${b.searched?P.bg:'rgba(239,159,39,0.28)'}" stroke="${b.searched?P.muted:'#BA7517'}" stroke-width="${1.5*px}"/><text x="${cx}" y="${cy}" dy="0.35em" text-anchor="middle" font-size="${f}" font-weight="500" fill="${b.searched?P.muted:P.text}">${ch}</text>`;
+for(const b of S.objs){if(b.lv!==lv)continue;const cx=b.x+0.5,cy=b.y+0.5;
+if(LINK.has(b.t)){const g=grp(b.g),c=g&&g.st==='blocked'?'#E24B4A':'#7F77DD',t=linkTargets(b);
+o+=`<g><title>${esc(objTip(b))}</title><rect x="${b.x+0.1}" y="${b.y+0.1}" width="0.8" height="0.8" rx="0.08" fill="rgba(127,119,221,0.2)" stroke="${c}" stroke-width="${1.5*px}"/>`;
+if(b.t==='stairs')[0.32,0.5,0.68].forEach(yy=>{o+=`<line x1="${b.x+0.24}" y1="${b.y+yy}" x2="${b.x+0.76}" y2="${b.y+yy}" stroke="${c}" stroke-width="${1.2*px}"/>`;});
+else o+=`<polygon points="${cx},${b.y+0.2} ${b.x+0.33},${b.y+0.42} ${b.x+0.67},${b.y+0.42}" fill="${c}"/><polygon points="${b.x+0.33},${b.y+0.58} ${b.x+0.67},${b.y+0.58} ${cx},${b.y+0.8}" fill="${c}"/>`;
+if(s>=8)o+=`<text x="${b.x+1.05}" y="${cy}" dy="0.35em" font-size="${11*px}" fill="${P.muted}">${esc((b.label?b.label+' · ':'')+(t.length?'to '+t.join(', '):'not linked'))}</text>`;
+o+='</g>';continue;}
+const[ch,nm]=OBJ[b.t]||OBJ.unknown;
+if(s<6){o+=`<circle cx="${cx}" cy="${cy}" r="${3*px}" fill="${b.searched?P.muted:'#BA7517'}"><title>${esc(objTip(b))}</title></circle>`;continue;}
+const r=Math.max(0.36,9*px),f=Math.max(0.44,11*px);
+o+=`<g><title>${esc(objTip(b))}</title><circle cx="${cx}" cy="${cy}" r="${r}" fill="${b.searched?P.bg:'rgba(239,159,39,0.28)'}" stroke="${b.searched?P.muted:'#BA7517'}" stroke-width="${1.5*px}"/><text x="${cx}" y="${cy}" dy="0.35em" text-anchor="middle" font-size="${f}" font-weight="500" fill="${b.searched?P.muted:P.text}">${ch}</text>`;
 if(b.label)o+=`<text x="${cx+r+0.08}" y="${cy}" dy="0.35em" font-size="${11*px}" fill="${P.muted}">${esc(b.label)}</text>`;
 o+='</g>';}
-if(route&&route.pts.length>1)o+=`<polyline points="${route.pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#1D9E75" stroke-width="${3*px}" stroke-dasharray="${8*px} ${5*px}" stroke-linecap="round" stroke-linejoin="round"/>`;
-if(hv&&hv.k==='edge'){const e=hv.e;o+=e.o==='h'?`<line x1="${e.x}" y1="${e.y}" x2="${e.x+1}" y2="${e.y}" stroke="#378ADD" stroke-width="${4*px}" stroke-linecap="round"/>`:`<line x1="${e.x}" y1="${e.y}" x2="${e.x}" y2="${e.y+1}" stroke="#378ADD" stroke-width="${4*px}" stroke-linecap="round"/>`;}
-return o+'</g>';
-}
-function render(){
-const W=wrap.clientWidth||680,H=wrap.clientHeight||460,vw=W/view.s,vh=H/view.s;
+if(typeof S.current==='string'&&lv===groundLv()){const[x,y]=S.current.slice(2).split(',').map(Number);o+=`<circle cx="${x+0.5}" cy="${y+0.5}" r="${Math.max(0.3,5*px)}" fill="#1D9E75"/><text x="${x+0.5}" y="${y+0.5}" dx="${8*px}" dy="0.35em" font-size="${11*px}" fill="#1D9E75">you are here</text>`;}
+if(route){let run=[];const out=()=>{if(run.length>1)o+=`<polyline points="${run.map(p=>p[0]+','+p[1]).join(' ')}" fill="none" stroke="#1D9E75" stroke-width="${3*px}" stroke-dasharray="${8*px} ${5*px}" stroke-linecap="round" stroke-linejoin="round"/>`;run=[];};
+for(const p of route.pts){if(p[2]===lv)run.push(p);else out();}out();}
+return o+'</g>';}
+function renderHover(){if(!S){gH.innerHTML='';return;}const px=1/view.s;let o='';
+if(dr&&dr.kind==='line'){const t=LINE_T[lineType];o+=`<polyline points="${dr.pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${t.c}" stroke-width="${t.w*px}" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.8"/>`;}
+else if(hov){
+if(hov.k==='cell')o+=`<rect x="${hov.x}" y="${hov.y}" width="1" height="1" fill="rgba(55,138,221,0.22)"/>`;
+else if(hov.k==='edge'){const e=hov.e;o+=e.o==='h'?`<line x1="${e.x}" y1="${e.y}" x2="${e.x+1}" y2="${e.y}" stroke="#378ADD" stroke-width="${4*px}" stroke-linecap="round"/>`:`<line x1="${e.x}" y1="${e.y}" x2="${e.x}" y2="${e.y+1}" stroke="#378ADD" stroke-width="${4*px}" stroke-linecap="round"/>`;}
+else if(hov.k==='vert')o+=`<circle cx="${hov.x}" cy="${hov.y}" r="${4*px}" fill="${LINE_T[lineType].c}"/>`;
+else if(hov.k==='paint')o+=tool==='erase'?`<rect x="${hov.x}" y="${hov.y}" width="1" height="1" fill="none" stroke="#E24B4A" stroke-width="${1.5*px}"/>`:`<rect x="${hov.x}" y="${hov.y}" width="1" height="1" fill="${ZONE_T[zoneType].f}"/>`;}
+gH.innerHTML=o;}
+let raf=0,need={};
+function req(k){need[k]=1;if(!raf)raf=requestAnimationFrame(flush);}
+function render(){req('all');}
+function flush(){raf=0;const n=need;need={};const W=wrap.clientWidth||680,H=wrap.clientHeight||460,vw=W/view.s,vh=H/view.s;
 svg.setAttribute('viewBox',`${view.x} ${view.y} ${vw} ${vh}`);
-svg.innerHTML=draw(view.x,view.y,vw,vh,1/view.s,pal(),false,hov);
+if(n.all||!P)P=pal();
+if(n.all||n.view)gG.innerHTML=drawGrid(view.x,view.y,vw,vh,view.s,P);
+if(n.all){gM.innerHTML=S?drawMain(S.lvl,1/view.s,P):'';updateUI();}
+renderHover();}
+function updateUI(){
 $('modeTag').textContent=S?(S.mode==='ship'?'Ship · inside':'Drop zone · outside'):'New map';
+const sel=$('lvSel');
+sel.innerHTML=S?[...S.levels].sort((a,b)=>b.z-a.z).map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join(''):'<option>Level 1</option>';
+if(S)sel.value=String(S.lvl);
+const open=openLevel(S&&S.lvl);
+$('toolBar').style.display=open?'flex':'none';
+document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('on',b.dataset.tool===tool));
+const tt=$('terrType');tt.style.display=open&&(tool==='line'||tool==='paint')?'':'none';
+if(tool==='line'||tool==='paint'){const src=tool==='line'?LINE_T:ZONE_T;if(tt.dataset.for!==tool){tt.innerHTML=Object.keys(src).map(k=>`<option value="${k}">${src[k].n}</option>`).join('');tt.dataset.for=tool;}tt.value=tool==='line'?lineType:zoneType;}
+$('terrLegend').style.display=S&&S.mode==='drop'?'flex':'none';
 $('bRoute').innerHTML=route?'<i class="ti ti-route-off" aria-hidden="true"></i>Hide route':'<i class="ti ti-route" aria-hidden="true"></i>Route to safety';
 }
-function bounds(){let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;const inc=(a,b,c,d)=>{x1=Math.min(x1,a);y1=Math.min(y1,b);x2=Math.max(x2,c);y2=Math.max(y2,d);};S.rooms.forEach(r=>inc(r.x,r.y,r.x+r.w,r.y+r.h));S.objs.forEach(o=>inc(o.x,o.y,o.x+1,o.y+1));S.doors.forEach(d=>inc(d.x-1,d.y-1,d.x+1,d.y+1));const p=3;return{x:x1-p,y:y1-p,w:x2-x1+2*p,h:y2-y1+2*p};}
-function fit(){const W=wrap.clientWidth||680,H=wrap.clientHeight||460;if(!S){view={s:24,x:-(W/24-10)/2,y:-(H/24-5)/2};return;}const b=bounds(),s=Math.max(6,Math.min(48,W/b.w,H/b.h));view={s,x:b.x+b.w/2-W/s/2,y:b.y+b.h/2-H/s/2};}
+function cursorFor(){return tool==='map'||!openLevel(S&&S.lvl)?'crosshair':'cell';}
+function setTool(t){tool=t;hov=null;hovKey='';svg.style.cursor=cursorFor();updateUI();setStatus();req('hov');}
+function bounds(lv){let x1=1e9,y1=1e9,x2=-1e9,y2=-1e9;const inc=(a,b,c,d)=>{x1=Math.min(x1,a);y1=Math.min(y1,b);x2=Math.max(x2,c);y2=Math.max(y2,d);};
+S.rooms.forEach(r=>{if(r.lv===lv)inc(r.x,r.y,r.x+r.w,r.y+r.h);});
+S.objs.forEach(o=>{if(o.lv===lv)inc(o.x,o.y,o.x+1,o.y+1);});
+S.doors.forEach(d=>{if(d.lv===lv)inc(d.x-1,d.y-1,d.x+1,d.y+1);});
+S.lines.forEach(l=>{if(l.lv===lv)l.pts.forEach(p=>inc(p[0],p[1],p[0],p[1]));});
+for(const k in S.cells){const a=k.split('|');if(+a[0]===lv)inc(+a[1],+a[2],+a[1]+1,+a[2]+1);}
+if(x1>x2)return{x:-3,y:-3,w:16,h:11};const p=3;return{x:x1-p,y:y1-p,w:x2-x1+2*p,h:y2-y1+2*p};}
+function fit(){const W=wrap.clientWidth||680,H=wrap.clientHeight||460;if(!S){view={s:24,x:-(W/24-10)/2,y:-(H/24-5)/2};return;}const b=bounds(S.lvl),s=Math.max(1,Math.min(48,W/b.w,H/b.h));view={s,x:b.x+b.w/2-W/s/2,y:b.y+b.h/2-H/s/2};}
 function ensureVisible(r){const W=wrap.clientWidth/view.s,H=wrap.clientHeight/view.s;if(r.x<view.x||r.y<view.y||r.x+r.w>view.x+W||r.y+r.h>view.y+H)fit();}
-function zoomAt(cx,cy,f){const b=svg.getBoundingClientRect(),ox=cx-b.left,oy=cy-b.top,wx=view.x+ox/view.s,wy=view.y+oy/view.s,s2=Math.max(6,Math.min(80,view.s*f));view.x=wx-ox/s2;view.y=wy-oy/s2;view.s=s2;render();}
+function zoomAt(cx,cy,f){const b=svg.getBoundingClientRect(),ox=cx-b.left,oy=cy-b.top,wx=view.x+ox/view.s,wy=view.y+oy/view.s,s2=Math.max(1,Math.min(80,view.s*f));view.x=wx-ox/s2;view.y=wy-oy/s2;view.s=s2;req('all');}
+function switchLevel(lv){if(!S||lv===S.lvl)return;views[S.lvl]={...view};S.lvl=lv;if(views[lv])view={...views[lv]};else fit();hov=null;hovKey='';if(!openLevel(lv))tool='map';svg.style.cursor=cursorFor();save();render();setStatus();}
+function goTo(m){switchLevel(m.lv);const W=wrap.clientWidth,H=wrap.clientHeight;view.x=m.x+0.5-W/view.s/2;view.y=m.y+0.5-H/view.s/2;render();setStatus('Now viewing '+lvName(m.lv)+'.');}
 function closeMenu(){menu.hidden=true;menu.innerHTML='';}
 function closeDlg(){dlg.innerHTML='';}
 function showDlg(html){closeMenu();dlg.innerHTML=`<div class="cg-dlg"><div class="cg-card">${html}</div></div>`;}
 function mkBtn(x){const b=document.createElement('button');b.title=x.l;b.innerHTML=(x.badge?`<span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;border-radius:50%;border:1px solid #BA7517;font-size:11px;font-weight:500">${esc(x.badge)}</span>`:`<i class="ti ti-${x.i}" aria-hidden="true" style="font-size:16px;flex:none"></i>`)+`<span style="overflow:hidden;text-overflow:ellipsis">${esc(x.l)}</span>`;
-b.onclick=()=>{closeMenu();if(x.mut)pushUndo();x.f();if(x.mut){route=null;save();render();setStatus();}};return b;}
+b.onclick=()=>{closeMenu();if(x.mut)pushUndo();x.f();if(x.mut){route=null;save();render();if(!dlg.innerHTML)setStatus();}};return b;}
+function cellHit(c){return{k:'cell',x:c.x,y:c.y,r:roomAt(c.x,c.y)};}
 function items(h,px,py){
 const it=[];
 if(h.k==='edge'){
-const d=doorAt(h.e);
+const d=doorAt(h.e),ln=d?null:lineAt(h.e),c=h.cell,cr=roomAt(c.x,c.y),useCell=(cr||openLevel(S.lvl))?[{i:'pointer',l:'Use the cell instead',f:()=>openMenu(cellHit(c),px,py)}]:[];
 if(d){it.push({h:tip(d)});
 if(d.t!=='port'){
 if(d.st!=='open')it.push({i:'door-enter',l:'Open',mut:1,f:()=>{d.st='open';if(beyondEmpty(d))mapDialog(d);}});
@@ -171,27 +278,39 @@ else if(beyondEmpty(d))it.push({i:'map-2',l:"Map what's beyond",f:()=>mapDialog(
 ['unopened','locked','sealed'].filter(s=>s!==d.st).forEach(s=>it.push({i:{unopened:'door',locked:'lock',sealed:'barrier-block'}[s],l:'Mark '+s,mut:1,f:()=>{d.st=s;}}));}
 it.push({i:'tag',l:d.label?'Edit label':'Add label',f:()=>textDialog('Label this '+DOOR_T[d.t].toLowerCase(),d.label||'',v=>{d.label=v;})});
 it.push('hr',{i:'trash',l:'Remove',mut:1,f:()=>{S.doors=S.doors.filter(x=>x!==d);}});
+}else if(ln){it.push({h:LINE_T[ln.t].n+(ln.label?' · '+ln.label:'')});
+Object.keys(LINE_T).filter(t=>t!==ln.t).forEach(t=>it.push({i:'replace',l:'Change to '+LINE_T[t].n.toLowerCase(),mut:1,f:()=>{ln.t=t;}}));
+it.push({i:'tag',l:ln.label?'Edit label':'Add label',f:()=>textDialog('Label this '+LINE_T[ln.t].n.toLowerCase(),ln.label||'',v=>{ln.label=v;})});
+it.push({i:'trash',l:'Remove this edge',mut:1,f:()=>{S.lines=S.lines.filter(x=>x!==ln);}});
+if(useCell.length)it.push('hr',...useCell);
+}else{it.push({h:'Wall edge'});
+it.push({grid:['door','airlock','hatch','blast','vent','port'].map(t=>({i:DOOR_I[t],l:DOOR_T[t],mut:1,f:()=>{S.doors.push({id:S.nid++,lv:S.lvl,x:h.e.x,y:h.e.y,o:h.e.o,t,st:t==='port'?'':'unopened'});}}))});
+if(useCell.length)it.push('hr',...useCell);}
 }else{
-it.push({h:'Wall edge'});
-it.push({grid:['door','airlock','hatch','blast','vent','port'].map(t=>({i:DOOR_I[t],l:DOOR_T[t],mut:1,f:()=>{S.doors.push({id:S.nid++,x:h.e.x,y:h.e.y,o:h.e.o,t,st:t==='port'?'':'unopened'});}}))});
-const c=h.cell,r=roomAt(c.x,c.y);
-if(r||S.mode==='drop')it.push('hr',{i:'pointer',l:'Use the cell instead',f:()=>openMenu({k:'cell',x:c.x,y:c.y,r},px,py)});}
-}else{
-const o=objAt(h.x,h.y),r=h.r;
-if(o){it.push({h:(o.label||OBJ[o.t][1])+(o.searched?' · searched':' · unsearched')});
+const o=objAt(h.x,h.y),r=h.r,z=r?null:zoneAt(h.x,h.y);
+if(pending&&r&&!o&&!members(pending.g).some(m=>m.lv===S.lvl)){const pg=pending;it.push({i:'circle-plus',l:'Place '+OBJ[pg.t][1].toLowerCase()+' here',mut:1,f:()=>{S.objs.push({id:S.nid++,lv:S.lvl,x:h.x,y:h.y,t:pg.t,g:pg.g,searched:false});pending=null;}},'hr');}
+if(o&&LINK.has(o.t)){const g=grp(o.g),verb=o.t==='stairs'?'Take':'Ride',bad=g&&g.st==='blocked';
+it.push({h:objTip(o)});
+members(o.g).filter(m=>m!==o&&m.lv!==o.lv).forEach(m=>it.push({i:'arrow-right',l:'Go to '+lvName(m.lv),f:()=>goTo(m)}));
+it.push({i:'arrow-up',l:verb+' up to a new level',f:()=>levelDialog(o,'up')},{i:'arrow-down',l:verb+' down to a new level',f:()=>levelDialog(o,'down')});
+if(S.levels.some(l=>!members(o.g).some(m=>m.lv===l.id)))it.push({i:'link',l:'Link to an existing level',f:()=>linkDialog(o)});
+it.push({i:bad?'circle-check':'ban',l:bad?(o.t==='elevator'?'Mark working':'Mark clear'):(o.t==='elevator'?'Mark out of service':'Mark blocked'),mut:1,f:()=>{if(g)g.st=bad?'ok':'blocked';}});
+it.push({i:'tag',l:o.label?'Edit label':'Add label',f:()=>textDialog('Label this '+OBJ[o.t][1].toLowerCase(),o.label||'',v=>{o.label=v;})});
+it.push({i:'trash',l:'Remove from this level',mut:1,f:()=>{S.objs=S.objs.filter(x=>x!==o);cleanGroups();}});
+}else if(o){it.push({h:objTip(o)});
 it.push({i:o.searched?'search-off':'check',l:o.searched?'Mark unsearched':'Mark searched',mut:1,f:()=>{o.searched=!o.searched;}});
 it.push({i:'tag',l:o.label?'Edit label':'Add label',f:()=>textDialog('Label this object',o.label||'',v=>{o.label=v;})});
 it.push({i:'trash',l:'Remove object',mut:1,f:()=>{S.objs=S.objs.filter(x=>x!==o);}});
-}else{it.push({h:r?r.name:'Open ground'});
-it.push({grid:(r?IN_OBJ:OUT_OBJ).map(t=>({badge:OBJ[t][0],l:OBJ[t][1],mut:1,f:()=>{S.objs.push({id:S.nid++,x:h.x,y:h.y,t,searched:false});}}))});}
+}else{it.push({h:r?r.name:(z?ZONE_T[z].n:'Open ground')});
+if(z)it.push({i:'eraser',l:'Clear '+ZONE_T[z].n.toLowerCase(),mut:1,f:()=>{delete S.cells[S.lvl+'|'+h.x+'|'+h.y];}});
+it.push({grid:(r?IN_OBJ:OUT_OBJ).map(t=>LINK.has(t)?{i:t,l:OBJ[t][1],mut:1,f:()=>{const g=S.nid++;S.groups.push({id:g,t,st:'ok'});S.objs.push({id:S.nid++,lv:S.lvl,x:h.x,y:h.y,t,g,searched:false});}}:{badge:OBJ[t][0],l:OBJ[t][1],mut:1,f:()=>{S.objs.push({id:S.nid++,lv:S.lvl,x:h.x,y:h.y,t,searched:false});}})});}
 it.push('hr');
-const here=r?r.id:'out';
+const here=r?r.id:'o:'+h.x+','+h.y;
 if(S.current!==here)it.push({i:'map-pin',l:"We're here",mut:1,f:()=>{S.current=here;}});
 if(r){it.push({i:'pencil',l:'Rename room',f:()=>textDialog('Rename room',r.name,v=>{if(v)r.name=v;})});
 if(r.id!==S.start)it.push({i:'trash',l:'Delete room',mut:1,f:()=>delRoom(r)});}
 }
-return it;
-}
+return it;}
 function openMenu(h,px,py){
 menu.innerHTML='';
 for(const x of items(h,px,py)){
@@ -201,89 +320,142 @@ if(x.grid){const g=document.createElement('div');g.style.cssText='display:grid;g
 menu.appendChild(mkBtn(x));}
 menu.hidden=false;
 const W=wrap.clientWidth,H=wrap.clientHeight,mw=menu.offsetWidth,mh=menu.offsetHeight;
-menu.style.left=Math.max(8,Math.min(px,W-mw-8))+'px';menu.style.top=Math.max(8,Math.min(py,H-mh-8))+'px';
-}
+menu.style.left=Math.max(8,Math.min(px,W-mw-8))+'px';menu.style.top=Math.max(8,Math.min(py,H-mh-8))+'px';}
 function ctx(cx,cy){if(!S||dlg.innerHTML)return;const h=hitAt(cx,cy);if(!h){setStatus("That's outside explored space. Open a door to map more.");return;}const b=wrap.getBoundingClientRect();openMenu(h,cx-b.left,cy-b.top);}
-function delRoom(r){S.rooms=S.rooms.filter(x=>x!==r);S.objs=S.objs.filter(o=>!(o.x>=r.x&&o.x<r.x+r.w&&o.y>=r.y&&o.y<r.y+r.h));
-if(S.mode==='ship')S.doors=S.doors.filter(d=>{const[a,b]=edgeCells(d);return roomAt(a[0],a[1])||roomAt(b[0],b[1]);});
+function delRoom(r){S.rooms=S.rooms.filter(x=>x!==r);S.objs=S.objs.filter(o=>!(o.lv===r.lv&&o.x>=r.x&&o.x<r.x+r.w&&o.y>=r.y&&o.y<r.y+r.h));cleanGroups();
+if(!openLevel(r.lv))S.doors=S.doors.filter(d=>{if(d.lv!==r.lv)return true;const[a,b]=edgeCells(d);return roomAt(a[0],a[1],d.lv)||roomAt(b[0],b[1],d.lv);});
 if(S.current===r.id)S.current=S.start;}
 function rectFor(d,dir,W,L,off){
 if(d.o==='h'){const x0=d.x-Math.floor((W-1)/2)+off;return dir==='down'?{x:x0,y:d.y,w:W,h:L}:{x:x0,y:d.y-L,w:W,h:L};}
 const y0=d.y-Math.floor((W-1)/2)+off;return dir==='right'?{x:d.x,y:y0,w:L,h:W}:{x:d.x-L,y:y0,w:L,h:W};}
+function kindDefaults(){const c=$('mKind').value==='corridor';const n=S.rooms.filter(r=>(r.kind||'room')===$('mKind').value).length+1;$('mName').placeholder=(c?'Corridor ':'Room ')+n;$('mW').value=c?3:6;$('mL').value=c?15:6;}
+function dims(){const W=+$('mW').value,L=+$('mL').value;return Number.isInteger(W)&&Number.isInteger(L)&&W>=1&&L>=1&&W<=500&&L<=500?[W,L]:null;}
+const DIMROW='<div class="cg-row"><label for="mW">Width (ft)</label><input id="mW" type="number" min="1" max="500" step="1" style="width:76px"><label for="mL" style="min-width:0">Length</label><input id="mL" type="number" min="1" max="500" step="1" style="width:76px"></div>';
+const KINDROW='<div class="cg-row"><label for="mKind">Type</label><select id="mKind"><option value="room">Room</option><option value="corridor">Corridor</option></select></div>';
+function wireDlg(ok,cancelId,cancelFn){kindDefaults();$('mKind').onchange=kindDefaults;
+dlg.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',()=>{$('mErr').textContent='';}));
+dlg.querySelectorAll('input').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')ok();}));
+$('mOk').onclick=ok;$(cancelId).onclick=cancelFn;}
 function mapDialog(d){
-const[a,b]=edgeCells(d),ra=roomAt(a[0],a[1]),rb=roomAt(b[0],b[1]);let dirs;
+const[a,b]=edgeCells(d),ra=roomAt(a[0],a[1],d.lv),rb=roomAt(b[0],b[1],d.lv);let dirs;
 if(ra&&!rb)dirs=[d.o==='h'?'down':'right'];else if(rb&&!ra)dirs=[d.o==='h'?'up':'left'];else if(!ra&&!rb)dirs=d.o==='h'?['down','up']:['right','left'];else return;
 const DN={down:'South',up:'North',right:'East',left:'West'};
 showDlg(`<p style="margin:0 0 4px;font-weight:500">What's beyond the ${DOOR_T[d.t].toLowerCase()}?</p>
 <p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">Width runs along the wall. Length runs away from the door.</p>
-<div class="cg-row"><label for="mName">Name</label><input id="mName" style="flex:1;min-width:0" maxlength="40"></div>
-<div class="cg-row"><label for="mKind">Type</label><select id="mKind"><option value="room">Room</option><option value="corridor">Corridor</option></select></div>
-${dirs.length>1?`<div class="cg-row"><label for="mDir">Extends</label><select id="mDir">${dirs.map(x=>`<option value="${x}">${DN[x]}</option>`).join('')}</select></div>`:''}
-<div class="cg-row"><label for="mW">Width (ft)</label><input id="mW" type="number" min="1" max="200" step="1" style="width:72px"><label for="mL" style="min-width:0">Length</label><input id="mL" type="number" min="1" max="200" step="1" style="width:72px"></div>
-<div class="cg-row"><label for="mO">Offset (ft)</label><input id="mO" type="number" step="1" value="0" style="width:72px"><span style="font-size:12px;color:var(--text-muted)">Positive shifts ${d.o==='h'?'east':'south'}</span></div>
+<div class="cg-row"><label for="mName">Name</label><input id="mName" style="flex:1;min-width:0" maxlength="40"></div>${KINDROW}
+${dirs.length>1?`<div class="cg-row"><label for="mDir">Extends</label><select id="mDir">${dirs.map(x=>`<option value="${x}">${DN[x]}</option>`).join('')}</select></div>`:''}${DIMROW}
+<div class="cg-row"><label for="mO">Offset (ft)</label><input id="mO" type="number" step="1" value="0" style="width:76px"><span style="font-size:12px;color:var(--text-muted)">Positive shifts ${d.o==='h'?'east':'south'}</span></div>
 <div class="cg-err" id="mErr"></div>
 <div style="display:flex;gap:8px;justify-content:flex-end"><button id="mSkip">Skip for now</button><button id="mOk">Map it</button></div>`);
-const setDef=()=>{const c=$('mKind').value==='corridor';const n=S.rooms.filter(r=>(r.kind||'room')===$('mKind').value).length+1;$('mName').placeholder=(c?'Corridor ':'Room ')+n;$('mW').value=c?3:6;$('mL').value=c?15:6;};
-setDef();$('mKind').onchange=setDef;
-dlg.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',()=>{$('mErr').textContent='';}));
-const ok=()=>{const W=+$('mW').value,L=+$('mL').value,off=Math.round(+$('mO').value||0),err=m=>{$('mErr').textContent=m;};
-if(!Number.isInteger(W)||!Number.isInteger(L)||W<1||L<1||W>200||L>200)return err('Enter whole numbers from 1 to 200.');
-const dir=dirs.length>1?$('mDir').value:dirs[0],r=rectFor(d,dir,W,L,off);
+const ok=()=>{const dm=dims(),err=m=>{$('mErr').textContent=m;};if(!dm)return err('Enter whole numbers from 1 to 500.');
+const[W,L]=dm,off=Math.round(+$('mO').value||0),dir=dirs.length>1?$('mDir').value:dirs[0],r=rectFor(d,dir,W,L,off);
 const touch=d.o==='h'?(d.x>=r.x&&d.x<r.x+r.w):(d.y>=r.y&&d.y<r.y+r.h);
 if(!touch)return err('That offset moves the space off the door. Try a smaller offset.');
-if(S.rooms.some(q=>r.x<q.x+q.w&&r.x+r.w>q.x&&r.y<q.y+q.h&&r.y+r.h>q.y))return err("That overlaps space you've already mapped. Adjust the size or offset.");
+if(S.rooms.some(q=>q.lv===d.lv&&r.x<q.x+q.w&&r.x+r.w>q.x&&r.y<q.y+q.h&&r.y+r.h>q.y))return err("That overlaps space you've already mapped. Adjust the size or offset.");
 const name=$('mName').value.trim()||$('mName').placeholder;
-pushUndo();S.rooms.push({id:S.nid++,name,kind:$('mKind').value,...r});d.st='open';route=null;closeDlg();save();ensureVisible(r);render();setStatus(`Mapped ${name} (${W} × ${L} ft).`);};
-$('mOk').onclick=ok;$('mSkip').onclick=()=>{closeDlg();setStatus("Door marked open. Right-click it later and choose Map what's beyond.");};
-dlg.querySelectorAll('input').forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')ok();}));
-$('mName').focus();
-}
+pushUndo();S.rooms.push({id:S.nid++,lv:d.lv,name,kind:$('mKind').value,...r});clearCells(d.lv,r);d.st='open';route=null;closeDlg();save();ensureVisible(r);render();setStatus(`Mapped ${name} (${W} × ${L} ft).`);};
+wireDlg(ok,'mSkip',()=>{closeDlg();setStatus("Door marked open. Right-click it later and choose Map what's beyond.");});
+$('mName').focus();}
+function levelDialog(o,dir){
+const nm=OBJ[o.t][1].toLowerCase();
+showDlg(`<p style="margin:0 0 4px;font-weight:500">What's ${dir==='up'?'above':'below'}?</p>
+<p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">This opens a new level as its own sheet, starting with the space the ${nm} ${o.t==='stairs'?'arrive':'arrives'} in.</p>
+<div class="cg-row"><label for="nLv">Level name</label><input id="nLv" style="flex:1;min-width:0" maxlength="40" placeholder="Level ${S.levels.length+1}"></div>
+<div class="cg-row"><label for="mName">Space name</label><input id="mName" style="flex:1;min-width:0" maxlength="40"></div>${KINDROW}${DIMROW}
+<p style="margin:-4px 0 8px;font-size:12px;color:var(--text-muted)">Width runs east–west. Length runs north–south.</p>
+<div class="cg-err" id="mErr"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button id="mNo">Cancel</button><button id="mOk">Create level</button></div>`);
+const ok=()=>{const dm=dims();if(!dm){$('mErr').textContent='Enter whole numbers from 1 to 500.';return;}
+const[W,L]=dm,lname=$('nLv').value.trim()||$('nLv').placeholder,rname=$('mName').value.trim()||$('mName').placeholder,kind=$('mKind').value;
+pushUndo();const cur=lvObj(o.lv);
+S.levels.forEach(l=>{if(dir==='up'&&l.z>cur.z)l.z++;if(dir==='down'&&l.z<cur.z)l.z--;});
+const lid=S.nid++;S.levels.push({id:lid,name:lname,z:dir==='up'?cur.z+1:cur.z-1});
+S.rooms.push({id:S.nid++,lv:lid,x:0,y:0,w:W,h:L,name:rname,kind});
+S.objs.push({id:S.nid++,lv:lid,x:Math.floor(W/2),y:Math.floor(L/2),t:o.t,g:o.g,searched:false});
+closeDlg();route=null;views[S.lvl]={...view};S.lvl=lid;tool='map';hov=null;fit();svg.style.cursor=cursorFor();save();render();setStatus(`Created ${lname}. The ${nm} ${o.t==='stairs'?'arrive':'arrives'} in ${rname}.`);};
+wireDlg(ok,'mNo',closeDlg);$('nLv').focus();}
+function linkDialog(o){
+const opts=[...S.levels].sort((a,b)=>b.z-a.z).filter(l=>!members(o.g).some(m=>m.lv===l.id)),nm=OBJ[o.t][1].toLowerCase();
+showDlg(`<p style="margin:0 0 4px;font-weight:500">Link to an existing level</p>
+<p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">Pick the level, then right-click (or long-press) where the other end of the ${nm} is.</p>
+<div class="cg-row"><label for="kLv">Level</label><select id="kLv">${opts.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join('')}</select></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button id="kNo">Cancel</button><button id="kOk">Continue</button></div>`);
+$('kNo').onclick=closeDlg;
+$('kOk').onclick=()=>{const t=+$('kLv').value;pending={g:o.g,t:o.t};tool='map';closeDlg();switchLevel(t);setStatus();};}
 function textDialog(title,val,cb){
 showDlg(`<p style="margin:0 0 10px;font-weight:500">${esc(title)}</p><input id="tIn" style="width:100%" maxlength="40"><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button id="tNo">Cancel</button><button id="tOk">Save</button></div>`);
 const i=$('tIn');i.value=val;i.focus();i.select();
-const ok=()=>{pushUndo();cb(i.value.trim());closeDlg();route=null;save();render();};
-$('tOk').onclick=ok;$('tNo').onclick=closeDlg;i.addEventListener('keydown',e=>{if(e.key==='Enter')ok();if(e.key==='Escape')closeDlg();});
-}
+const ok=()=>{pushUndo();cb(i.value.trim());closeDlg();route=null;save();render();setStatus();};
+$('tOk').onclick=ok;$('tNo').onclick=closeDlg;i.addEventListener('keydown',e=>{if(e.key==='Enter')ok();if(e.key==='Escape')closeDlg();});}
 function setupDlg(){
 const bs='height:auto;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;text-align:left;justify-content:flex-start;width:100%';
 showDlg(`<p style="margin:0 0 4px;font-weight:500">Where does the mission start?</p>
 <p style="margin:0 0 14px;font-size:13px;color:var(--text-secondary)">You begin with a 10 × 5 ft space on a 1 ft grid.${S?' This replaces your current map, so back up first if you want to keep it.':''}</p>
 <div style="display:grid;gap:8px">
 <button id="pShip" style="${bs}"><i class="ti ti-rocket" style="font-size:20px" aria-hidden="true"></i><span><span style="display:block;font-weight:500">Ship</span><span style="display:block;font-size:12px;color:var(--text-secondary)">You're inside. Only explored space is clickable.</span></span></button>
-<button id="pDrop" style="${bs}"><i class="ti ti-parachute" style="font-size:20px" aria-hidden="true"></i><span><span style="display:block;font-weight:500">Drop zone</span><span style="display:block;font-size:12px;color:var(--text-secondary)">You're outside. Place objects and entrances anywhere.</span></span></button>
+<button id="pDrop" style="${bs}"><i class="ti ti-parachute" style="font-size:20px" aria-hidden="true"></i><span><span style="display:block;font-weight:500">Drop zone</span><span style="display:block;font-size:12px;color:var(--text-secondary)">You're outside. Place objects, entrances, and terrain anywhere.</span></span></button>
 </div>${S?'<div style="text-align:right;margin-top:10px"><button id="pCancel">Cancel</button></div>':''}`);
-$('pShip').onclick=()=>newMap('ship');$('pDrop').onclick=()=>newMap('drop');if(S)$('pCancel').onclick=closeDlg;
-}
+$('pShip').onclick=()=>newMap('ship');$('pDrop').onclick=()=>newMap('drop');if(S)$('pCancel').onclick=closeDlg;}
+function outdoor(G){
+const b=bounds(G),x0=Math.floor(b.x)-2,y0=Math.floor(b.y)-2,x1=Math.ceil(b.x+b.w)+2,y1=Math.ceil(b.y+b.h)+2;
+const bE=new Set();S.lines.forEach(l=>{if(l.lv===G&&LINE_T[l.t]&&LINE_T[l.t].block)lineKeys(l).forEach(k=>bE.add(k));});
+const isFree=(x,y)=>x>=x0&&x<x1&&y>=y0&&y<y1&&!roomAt(x,y,G)&&!(ZONE_T[S.cells[G+'|'+x+'|'+y]]||{}).block;
+const D={G,bE,isFree,comp:new Map()};let k=0;
+for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const key=x+','+y;if(!isFree(x,y)||D.comp.has(key))continue;D.comp.set(key,k);const q=[[x,y]];while(q.length){const[cx,cy]=q.pop();for(const n of nbrs(cx,cy,D)){const nk=n[0]+','+n[1];if(!D.comp.has(nk)){D.comp.set(nk,k);q.push(n);}}}k++;}
+return D;}
+function nbrs(x,y,D){const out=[];[[1,0,'v'+(x+1)+','+y],[-1,0,'v'+x+','+y],[0,1,'h'+x+','+(y+1)],[0,-1,'h'+x+','+y]].forEach(([dx,dy,ek])=>{const nx=x+dx,ny=y+dy;if(D.isFree(nx,ny)&&!D.bE.has(ek))out.push([nx,ny]);});return out;}
+function cellPath(D,a,b){const ka=a[0]+','+a[1],kb=b[0]+','+b[1];if(ka===kb)return[];const prev=new Map([[ka,null]]),q=[a];let qi=0;
+while(qi<q.length){const c=q[qi++];if(c[0]+','+c[1]===kb)break;for(const n of nbrs(c[0],c[1],D)){const nk=n[0]+','+n[1];if(!prev.has(nk)){prev.set(nk,c);q.push(n);}}}
+if(!prev.has(kb))return[b];const path=[];let c=b;while(c&&c[0]+','+c[1]!==ka){path.unshift(c);c=prev.get(c[0]+','+c[1]);}return path;}
 function findRoute(){
 if(!S)return;
-const nm=id=>id==='out'?'outside':(S.rooms.find(r=>r.id===id)||{}).name;
-if(S.current==null||(S.current!=='out'&&!S.rooms.find(r=>r.id===S.current))){setStatus("Right-click a room and choose We're here first.");return;}
-if(S.current===S.start){route=null;render();setStatus(`You're already in ${nm(S.start)}.`);return;}
-const adj=new Map(),add=(a,b,d)=>{if(!adj.has(a))adj.set(a,[]);adj.get(a).push([b,d]);};
-for(const d of S.doors){if(d.t==='port'||d.st!=='open')continue;const[a,b]=edgeCells(d),ra=roomAt(a[0],a[1]),rb=roomAt(b[0],b[1]);
-const A=ra?ra.id:(S.mode==='drop'?'out':null),B=rb?rb.id:(S.mode==='drop'?'out':null);if(A==null||B==null||A===B)continue;add(A,B,d);add(B,A,d);}
-const prev=new Map([[S.current,null]]),q=[S.current];
-while(q.length){const n=q.shift();if(n===S.start)break;for(const[m,d]of adj.get(n)||[])if(!prev.has(m)){prev.set(m,[n,d]);q.push(m);}}
-if(!prev.has(S.start)){route=null;render();setStatus('No confirmed open route back. Check unopened, locked, or sealed doors.');return;}
-const chain=[];let n=S.start;while(n!==S.current){const[p,d]=prev.get(n);chain.unshift([n,d]);n=p;}
-const ctr=id=>{const r=S.rooms.find(x=>x.id===id);return r?[r.x+r.w/2,r.y+r.h/2]:null;};
-const pts=[];const c0=ctr(S.current);if(c0)pts.push(c0);
-for(const[node,d]of chain){pts.push(d.o==='h'?[d.x+0.5,d.y]:[d.x,d.y+0.5]);const c=ctr(node);if(c)pts.push(c);}
+const G=groundLv(),D=S.mode==='drop'?outdoor(G):null,multi=S.levels.length>1;
+const rn=id=>{if(typeof id==='string')return 'outside';const r=S.rooms.find(x=>x.id===id);return r?r.name+(multi?' ('+lvName(r.lv)+')':''):'?';};
+let start=S.current,startCell=null;
+if(typeof start==='string'){if(!D){setStatus("Right-click a room and choose We're here first.");return;}startCell=start.slice(2).split(',').map(Number);const c=D.comp.get(startCell.join(','));if(c==null){setStatus("Your marked spot is on impassable ground. Mark We're here somewhere else.");return;}start='k'+c;}
+else if(start==null||!S.rooms.some(r=>r.id===start)){setStatus("Right-click a room and choose We're here first.");return;}
+if(start===S.start){route=null;render();setStatus(`You're already in ${rn(S.start)}.`);return;}
+const adj=new Map(),add=(a,b,e)=>{if(!adj.has(a))adj.set(a,[]);adj.get(a).push([b,e]);};
+const side=(c,lv)=>{const r=roomAt(c[0],c[1],lv);if(r)return r.id;if(D&&lv===G){const k=D.comp.get(c[0]+','+c[1]);if(k!=null)return 'k'+k;}return null;};
+for(const d of S.doors){if(d.t==='port'||d.st!=='open')continue;const[a,b]=edgeCells(d),A=side(a,d.lv),B=side(b,d.lv);if(A==null||B==null||A===B)continue;add(A,B,{k:'door',d,ou:a,ov:b});add(B,A,{k:'door',d,ou:b,ov:a});}
+for(const g of S.groups){if(g.st==='blocked')continue;const ms=members(g.id).map(m=>[m,roomAt(m.x,m.y,m.lv)]).filter(p=>p[1]);
+for(let i=0;i<ms.length;i++)for(let j=0;j<ms.length;j++)if(i!==j&&ms[i][1].id!==ms[j][1].id)add(ms[i][1].id,ms[j][1].id,{k:'link',from:ms[i][0],to:ms[j][0]});}
+const prev=new Map([[start,null]]),q=[start];let qi=0;
+while(qi<q.length){const n=q[qi++];if(n===S.start)break;for(const[m,e]of adj.get(n)||[])if(!prev.has(m)){prev.set(m,[n,e]);q.push(m);}}
+if(!prev.has(S.start)){route=null;render();setStatus('No confirmed open route back. Check unopened, locked, or sealed doors, blocked stairs or elevators, and impassable terrain.');return;}
+const chain=[];let n=S.start;while(n!==start){const[p,e]=prev.get(n);chain.unshift([n,e]);n=p;}
+const ctr=id=>{const r=S.rooms.find(x=>x.id===id);return[r.x+r.w/2,r.y+r.h/2,r.lv];};
+const pts=[];let lastOut=null,u=start;
+if(startCell){lastOut=startCell;pts.push([startCell[0]+0.5,startCell[1]+0.5,G]);}else pts.push(ctr(start));
+for(const[v,e]of chain){
+if(e.k==='door'){const d=e.d;
+if(typeof u==='string'&&lastOut)cellPath(D,lastOut,e.ou).forEach(c=>pts.push([c[0]+0.5,c[1]+0.5,G]));
+pts.push(d.o==='h'?[d.x+0.5,d.y,d.lv]:[d.x,d.y+0.5,d.lv]);
+if(typeof v==='string'){lastOut=e.ov;pts.push([e.ov[0]+0.5,e.ov[1]+0.5,G]);}else pts.push(ctr(v));}
+else{pts.push([e.from.x+0.5,e.from.y+0.5,e.from.lv],[e.to.x+0.5,e.to.y+0.5,e.to.lv],ctr(v));}
+u=v;}
 route={pts};render();
-setStatus('Route: '+[S.current,...chain.map(c=>c[0])].map(nm).join(' → '));
-}
+const names=[start,...chain.map(c=>c[0])].map(rn).filter((x,i,a)=>i===0||x!==a[i-1]);
+setStatus('Route: '+names.join(' → '));}
+function deleteLevelDlg(){
+if(!S)return;const lv=S.lvl;if(lv===groundLv()){setStatus("The starting level can't be deleted.");return;}
+showDlg(`<p style="margin:0 0 4px;font-weight:500">Delete ${esc(lvName(lv))}?</p><p style="margin:0 0 14px;font-size:13px;color:var(--text-secondary)">Everything mapped on this level is removed. Stairs and elevators on other levels stay, but lose their link to it.</p>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button id="dNo">Cancel</button><button id="dOk">Delete level</button></div>`);
+$('dNo').onclick=closeDlg;
+$('dOk').onclick=()=>{pushUndo();['rooms','doors','objs','lines'].forEach(k=>{S[k]=S[k].filter(x=>x.lv!==lv);});for(const k in S.cells)if(k.startsWith(lv+'|'))delete S.cells[k];
+cleanGroups();S.levels=S.levels.filter(l=>l.id!==lv);if(typeof S.current==='number'&&!S.rooms.some(r=>r.id===S.current))S.current=S.start;
+delete views[lv];route=null;S.lvl=groundLv();if(views[S.lvl])view={...views[S.lvl]};else fit();closeDlg();save();render();setStatus('Level deleted.');};}
 function dl(name,href){const a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();}
 function backupDlg(){
-if(!S)return;const json=JSON.stringify({app:'cartographer',v:1,map:S});
-showDlg(`<p style="margin:0 0 4px;font-weight:500">Back up this map</p><p style="margin:0 0 10px;font-size:13px;color:var(--text-secondary)">Download the file, or copy the text and keep it somewhere safe.</p>
+if(!S)return;const json=JSON.stringify({app:'cartographer',v:2,map:S});
+showDlg(`<p style="margin:0 0 4px;font-weight:500">Back up this map</p><p style="margin:0 0 10px;font-size:13px;color:var(--text-secondary)">Download the file, or copy the text and keep it somewhere safe. All levels are included.</p>
 <textarea id="bTxt" readonly rows="5" style="width:100%;font-family:var(--font-mono);font-size:12px"></textarea>
 <div class="cg-err" id="bMsg" style="color:var(--text-secondary)"></div>
 <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button id="bCopy">Copy text</button><button id="bFile">Download file</button><button id="bClose">Close</button></div>`);
 $('bTxt').value=json;
 $('bCopy').onclick=()=>{const t=$('bTxt');t.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}if(navigator.clipboard)navigator.clipboard.writeText(json).then(()=>{$('bMsg').textContent='Copied';}).catch(()=>{$('bMsg').textContent=ok?'Copied':'Select the text and copy it manually.';});else $('bMsg').textContent=ok?'Copied':'Select the text and copy it manually.';};
 $('bFile').onclick=()=>{const stamp=new Date().toISOString().slice(0,10);dl(`cartographer-map-${stamp}.json`,URL.createObjectURL(new Blob([json],{type:'application/json'})));};
-$('bClose').onclick=closeDlg;
-}
+$('bClose').onclick=closeDlg;}
 function importDlg(){
 showDlg(`<p style="margin:0 0 4px;font-weight:500">Import a map</p><p style="margin:0 0 10px;font-size:13px;color:var(--text-secondary)">Choose a backup file or paste backup text. This replaces the current map.</p>
 <input type="file" id="iFile" accept=".json,application/json" style="font-size:13px;margin-bottom:8px;max-width:100%;height:auto;padding:6px;border:none;background:transparent">
@@ -295,53 +467,83 @@ $('iTxt').oninput=()=>{$('iErr').textContent='';};$('iNo').onclick=closeDlg;
 $('iOk').onclick=()=>{let o;try{o=JSON.parse($('iTxt').value);}catch(e){$('iErr').textContent="That isn't valid backup text. Check you copied all of it.";return;}
 const m=o&&o.map?o.map:o;
 if(!(m&&(m.mode==='ship'||m.mode==='drop')&&Array.isArray(m.rooms)&&m.rooms.length&&m.rooms.every(r=>[r.x,r.y,r.w,r.h].every(Number.isFinite))&&Array.isArray(m.doors)&&Array.isArray(m.objs))){$('iErr').textContent="That doesn't look like a Cartographer backup.";return;}
-if(S)pushUndo();S=m;S.nid=S.nid||Math.max(0,...S.rooms.map(r=>r.id),...S.doors.map(d=>d.id),...S.objs.map(o=>o.id))+1;route=null;closeDlg();save();fit();render();setStatus('Map loaded.');};
-}
+if(S)pushUndo();S=migrate(m);views={};pending=null;tool='map';route=null;closeDlg();save();fit();render();setStatus('Map loaded.');};}
 function exportImg(){
-if(!S)return;const b=bounds(),sc=32,W=Math.ceil(b.w*sc),H=Math.ceil(b.h*sc);
-const str=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}">${draw(b.x,b.y,b.w,b.h,1/sc,pal(),true,null)}</svg>`;
-const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(str);
+if(!S)return;const b=bounds(S.lvl),sc=Math.max(2,Math.min(32,4000/Math.max(b.w,b.h))),W=Math.ceil(b.w*sc),H=Math.ceil(b.h*sc),Pp=pal(),ln=lvName(S.lvl);
+const title=`<text x="${b.x+8/sc}" y="${b.y+8/sc}" dy="1em" font-size="${14/sc}" font-family="system-ui, sans-serif" fill="${Pp.text}">${esc(ln)}</text>`;
+const str=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="${b.x} ${b.y} ${b.w} ${b.h}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="${Pp.bg}"/>${drawGrid(b.x,b.y,b.w,b.h,sc,Pp)}${drawMain(S.lvl,1/sc,Pp)}${title}</svg>`;
+const svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(str),slug=ln.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'level';
 const img=new Image();
 img.onload=()=>{let png='';try{const c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(img,0,0);png=c.toDataURL('image/png');}catch(e){}
-showDlg(`<p style="margin:0 0 10px;font-weight:500">Map image</p><img src="${png||svgUrl}" alt="Exported map" style="display:block;max-width:100%;max-height:260px;margin:0 auto;border:0.5px solid var(--border);border-radius:var(--radius)">
+showDlg(`<p style="margin:0 0 10px;font-weight:500">${esc(ln)}</p><img src="${png||svgUrl}" alt="Exported map" style="display:block;max-width:100%;max-height:260px;margin:0 auto;border:0.5px solid var(--border);border-radius:var(--radius)">
+<p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">Exports the level you're viewing. Switch levels to export the others.</p>
 <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">${png?'<button id="xPng">Download PNG</button>':''}<button id="xSvg">Download SVG</button><button id="xClose">Close</button></div>`);
-if(png)$('xPng').onclick=()=>dl('cartographer-map.png',png);
-$('xSvg').onclick=()=>dl('cartographer-map.svg',URL.createObjectURL(new Blob([str],{type:'image/svg+xml'})));
+if(png)$('xPng').onclick=()=>dl(`cartographer-${slug}.png`,png);
+$('xSvg').onclick=()=>dl(`cartographer-${slug}.svg`,URL.createObjectURL(new Blob([str],{type:'image/svg+xml'})));
 $('xClose').onclick=closeDlg;};
-img.src=svgUrl;
-}
+img.src=svgUrl;}
+function extend(pts,v){let[x,y]=pts[pts.length-1];while(x!==v[0]||y!==v[1]){const dx=v[0]-x,dy=v[1]-y;if(Math.abs(dx)>=Math.abs(dy))x+=Math.sign(dx);else y+=Math.sign(dy);pts.push([x,y]);}}
+function paintCell(x,y){if(roomAt(x,y))return false;const k=S.lvl+'|'+x+'|'+y;if(S.cells[k]===zoneType)return false;S.cells[k]=zoneType;return true;}
+function segD(px,py,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((px-a[0])*dx+(py-a[1])*dy)/(dx*dx+dy*dy||1)));return Math.hypot(px-a[0]-t*dx,py-a[1]-t*dy);}
+function eraseAt(wx,wy){let ch=false;const k=S.lvl+'|'+Math.floor(wx)+'|'+Math.floor(wy);if(S.cells[k]){delete S.cells[k];ch=true;}
+const n=S.lines.length;S.lines=S.lines.filter(l=>l.lv!==S.lvl||!l.pts.some((p,i)=>i<l.pts.length-1&&segD(wx,wy,p,l.pts[i+1])<0.3));if(S.lines.length!==n)ch=true;return ch;}
+function startDraw(e){const[wx,wy]=toWorld(e.clientX,e.clientY);dr={id:e.pointerId,kind:tool,wx,wy};
+if(tool==='line'){dr.pts=[[Math.round(wx),Math.round(wy)]];req('hov');return;}
+pushUndo();dr.snap=JSON.stringify({c:S.cells,l:S.lines});
+if(tool==='paint'){dr.last=[Math.floor(wx),Math.floor(wy)];dr.changed=paintCell(dr.last[0],dr.last[1]);}else dr.changed=eraseAt(wx,wy);
+req('all');}
+function moveDraw(e){const[wx,wy]=toWorld(e.clientX,e.clientY);
+if(dr.kind==='line'){const v=[Math.round(wx),Math.round(wy)],l=dr.pts[dr.pts.length-1];if(v[0]!==l[0]||v[1]!==l[1]){extend(dr.pts,v);req('hov');}return;}
+if(dr.kind==='paint'){const c=[Math.floor(wx),Math.floor(wy)],l=dr.last;if(c[0]===l[0]&&c[1]===l[1])return;const n=Math.max(Math.abs(c[0]-l[0]),Math.abs(c[1]-l[1]));
+for(let i=1;i<=n;i++){if(paintCell(Math.round(l[0]+(c[0]-l[0])*i/n),Math.round(l[1]+(c[1]-l[1])*i/n)))dr.changed=true;}dr.last=c;req('all');return;}
+const n=Math.ceil(Math.hypot(wx-dr.wx,wy-dr.wy)/0.4)||1;for(let i=1;i<=n;i++){if(eraseAt(dr.wx+(wx-dr.wx)*i/n,dr.wy+(wy-dr.wy)*i/n))dr.changed=true;}dr.wx=wx;dr.wy=wy;req('all');}
+function endDraw(){const d=dr;dr=null;
+if(d.kind==='line'){if(d.pts.length>=2){pushUndo();S.lines.push({id:S.nid++,lv:S.lvl,t:lineType,pts:d.pts});route=null;save();}req('all');return;}
+if(!d.changed)undo.pop();else{route=null;save();}req('all');}
+function cancelDraw(){if(!dr)return;if(dr.kind!=='line'&&dr.snap){const s=JSON.parse(dr.snap);S.cells=s.c;S.lines=s.l;undo.pop();}dr=null;req('all');}
 const ptrs=new Map();let drag=null,pinch=null,lpTimer=null,lastType='mouse';
+svg.addEventListener('mousedown',e=>{if(e.button===1)e.preventDefault();});
 svg.addEventListener('pointerdown',e=>{
 lastType=e.pointerType;if(e.button===2)return;closeMenu();
 ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
 try{svg.setPointerCapture(e.pointerId);}catch(err){}
-if(ptrs.size===2){clearTimeout(lpTimer);drag=null;const[p,q]=[...ptrs.values()];pinch={d:Math.hypot(p.x-q.x,p.y-q.y)||1,s:view.s};return;}
+if(ptrs.size===2){clearTimeout(lpTimer);drag=null;cancelDraw();const[p,q]=[...ptrs.values()],b=svg.getBoundingClientRect();pinch={d:Math.hypot(p.x-q.x,p.y-q.y)||1,s:view.s,wx:view.x+((p.x+q.x)/2-b.left)/view.s,wy:view.y+((p.y+q.y)/2-b.top)/view.s};return;}
+if(ptrs.size>2)return;
+if(S&&!dlg.innerHTML&&tool!=='map'&&openLevel(S.lvl)&&e.button===0&&!e.shiftKey){startDraw(e);return;}
 drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y,moved:false,id:e.pointerId};
-if(e.pointerType!=='mouse'){clearTimeout(lpTimer);lpTimer=setTimeout(()=>{if(drag&&!drag.moved){const d=drag;drag=null;ctx(d.x,d.y);}},500);}
+if(e.pointerType!=='mouse'&&(tool==='map'||!openLevel(S&&S.lvl))){clearTimeout(lpTimer);lpTimer=setTimeout(()=>{if(drag&&!drag.moved){const d=drag;drag=null;ctx(d.x,d.y);}},500);}
 });
 svg.addEventListener('pointermove',e=>{
 if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-if(pinch&&ptrs.size===2){const[p,q]=[...ptrs.values()],d=Math.hypot(p.x-q.x,p.y-q.y);zoomAt((p.x+q.x)/2,(p.y+q.y)/2,(pinch.s*d/pinch.d)/view.s);return;}
+if(pinch&&ptrs.size===2){const[p,q]=[...ptrs.values()],b=svg.getBoundingClientRect(),d=Math.hypot(p.x-q.x,p.y-q.y),s2=Math.max(1,Math.min(80,pinch.s*d/pinch.d));view.s=s2;view.x=pinch.wx-((p.x+q.x)/2-b.left)/s2;view.y=pinch.wy-((p.y+q.y)/2-b.top)/s2;req('all');return;}
+if(dr&&dr.id===e.pointerId){moveDraw(e);return;}
 if(drag&&drag.id===e.pointerId){const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
 if(!drag.moved&&Math.hypot(dx,dy)>6){drag.moved=true;clearTimeout(lpTimer);svg.style.cursor='grabbing';}
-if(drag.moved){view.x=drag.vx-dx/view.s;view.y=drag.vy-dy/view.s;render();}return;}
-if(e.pointerType==='mouse'&&S&&!dlg.innerHTML){const h=hitAt(e.clientX,e.clientY),k=hkey(h);if(k!==hovKey){hov=h;hovKey=k;render();}}
+if(drag.moved){view.x=drag.vx-dx/view.s;view.y=drag.vy-dy/view.s;req('view');}return;}
+if(e.pointerType==='mouse'&&S&&!dlg.innerHTML){const[wx,wy]=toWorld(e.clientX,e.clientY);let h;
+if(tool!=='map'&&openLevel(S.lvl))h=tool==='line'?{k:'vert',x:Math.round(wx),y:Math.round(wy)}:{k:'paint',x:Math.floor(wx),y:Math.floor(wy)};else h=hit(wx,wy);
+const k=h?h.k+(h.e?h.e.x+','+h.e.y+h.e.o:h.x+','+h.y):'';if(k!==hovKey){hov=h;hovKey=k;req('hov');}}
 });
-const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;clearTimeout(lpTimer);if(drag&&drag.id===e.pointerId)drag=null;svg.style.cursor='crosshair';};
+const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;clearTimeout(lpTimer);if(dr&&dr.id===e.pointerId)endDraw();if(drag&&drag.id===e.pointerId)drag=null;svg.style.cursor=cursorFor();};
 svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
-svg.addEventListener('pointerleave',()=>{if(hov){hov=null;hovKey='';render();}});
+svg.addEventListener('pointerleave',()=>{if(hov){hov=null;hovKey='';req('hov');}});
 svg.addEventListener('contextmenu',e=>{e.preventDefault();if(lastType!=='mouse')return;ctx(e.clientX,e.clientY);});
-svg.addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();zoomAt(e.clientX,e.clientY,e.deltaY<0?1.12:1/1.12);},{passive:false});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu();});
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>render());
+svg.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.clientX,e.clientY,Math.exp(-Math.max(-60,Math.min(60,e.deltaY))*0.004));},{passive:false});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenu();cancelDraw();}});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>req('all'));
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+$('terrType').onchange=e=>{if(tool==='line')lineType=e.target.value;else zoneType=e.target.value;setStatus();};
+$('lvSel').onchange=e=>switchLevel(+e.target.value);
+$('bLvRen').onclick=()=>{if(!S)return;const l=lvObj(S.lvl);textDialog('Rename level',l.name,v=>{if(v)l.name=v;});};
+$('bLvDel').onclick=deleteLevelDlg;
 $('bIn').onclick=()=>{const b=svg.getBoundingClientRect();zoomAt(b.left+b.width/2,b.top+b.height/2,1.25);};
 $('bOut').onclick=()=>{const b=svg.getBoundingClientRect();zoomAt(b.left+b.width/2,b.top+b.height/2,0.8);};
-$('bFit').onclick=()=>{fit();render();};
-$('bUndo').onclick=()=>{if(!S||!undo.length){setStatus('Nothing to undo.');return;}S=JSON.parse(undo.pop());route=null;save();render();setStatus('Undone.');};
+$('bFit').onclick=()=>{if(S){fit();render();}};
+$('bUndo').onclick=()=>{if(!S||!undo.length){setStatus('Nothing to undo.');return;}S=JSON.parse(undo.pop());if(!S.levels.some(l=>l.id===S.lvl))S.lvl=groundLv();if(pending&&!grp(pending.g))pending=null;route=null;save();render();setStatus('Undone.');};
 $('bRoute').onclick=()=>{if(route){route=null;render();setStatus();}else findRoute();};
 $('bBackup').onclick=backupDlg;$('bImport').onclick=importDlg;$('bExport').onclick=exportImg;$('bNew').onclick=setupDlg;
-try{new ResizeObserver(()=>render()).observe(wrap);}catch(e){}
-try{const m=JSON.parse(localStorage.getItem(KEY)||'null');if(m&&m.rooms&&m.rooms.length)S=m;}catch(e){}
+try{new ResizeObserver(()=>req('all')).observe(wrap);}catch(e){}
+try{const m=JSON.parse(localStorage.getItem(KEY)||'null');if(m&&m.rooms&&m.rooms.length)S=migrate(m);}catch(e){}
 fit();render();setStatus();if(!S)setupDlg();
 </script>
 </body>
